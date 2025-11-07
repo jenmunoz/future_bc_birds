@@ -102,8 +102,14 @@ ebirdst::ebirdst_data_dir()
 
 # This list is filtered to exclude rare/accidental, introduced, uncertain, and extirpated statuses.
 # Assumes the CSV has at least columns: "status" and "common_name".
-bc_list_full <- read.csv("data/bc_birds_checklist.csv", stringsAsFactors = FALSE) %>%
+bc_list_full <- read.csv("data/bc_birds_checklist_avibase.csv", stringsAsFactors = FALSE) %>%
   as_tibble()
+View( bc_list_full)
+# I want to see how many species are rare/accidental # I dedided to exclude thsi ones from teh analyses ( ask David if he agrees)
+bc_list_full_accidental <- read.csv("data/bc_birds_checklist_avibase.csv", stringsAsFactors = FALSE) %>%
+  filter(status %in% c("Rare/Accidental"))
+
+
 #View(bc_list_full)
 # Safety checks in case the CSV schema changes
 #stopifnot(all(c("status", "common_name") %in% names(bc_list)))
@@ -207,13 +213,14 @@ raster_housefinch_fullyear <- load_raster(species = "house finch", product = "ab
 bc_species <- unique(list_species_bc_ebird$common_name)
 
 # Identify resident species (these have a different data product name)
-bc_species_resident <- list_species_bc_ebird %>%
+bc_species_resident_df <- list_species_bc_ebird %>%
   filter(is_resident == "TRUE")
 
+bc_species_resident<-unique(bc_species_resident_df$common_name)
 # LOOP over the list of species and download data, you will notice that it skipped some species, that do not have "full-year_max" data 
 
 for (species in bc_species) {
-  cat("\n>>> Downloading:", species, "\n")
+  cat("/n>>> Downloading:", species, "/n")
   # Download full-year abundance data at 3 km
   try({
     ebirdst_download_status(species,pattern = "full-year_max_3km",download_occurrence = FALSE,dry_run = FALSE, force = TRUE)
@@ -225,159 +232,181 @@ for (species in bc_species) {
 # Make sure force = FALSE so you don’t overwrite other species
 
 for (species in bc_species_resident) {
-  cat("\n>>> Downloading residents:", species, "\n")
+  cat("/n>>> Downloading residents:", species, "/n")
   # Download seasonal abundance data for resident species at 3 km
   try({ ebirdst_download_status( species,pattern = "abundance_seasonal_max_3km",download_occurrence = FALSE,dry_run = FALSE,force = FALSE  )
   }, silent = TRUE)
 }
 
 # ================================
+# 7) READ BC BOUNDARIES and transform to ebird projection
+# ================================
+
+# The original boundary is projected as NAD 1983 BC Environment Albers
+bc_boundary<-raster
+
+# Read shapefile
+getwd()
+bc_boundary <- sf::st_read("data/layers/BC_boundary_layer.shp") # vector file 
+
+crs(bc_boundary)
+ext(bc_boundary)      # spatial extent
+res(bc_boundary)      # resolution
+
+# Ensure clip geometry matches each raster's CRS
+
+bc_boundary_proj <- bc_boundary|>
+  st_transform("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs") |> # transform coordinate system to match the raster data
+  vect()
+
+#vect() # transforms to terra object spat vector 
+# check the projection
+crs(bc_boundary_proj)
+
+# ================================
 # 7) Load AND CROP TO BC BOUNDARIES FOR ALL BC SPECIES DOWNLOADED
 # ================================
 
 # try(..., silent = TRUE) means if one species fails (e.g., not available), the loop continues.
+# NOte that here we work with residents nad other speceis separated because teh names of teh files are differet 
 
-bc_boundary=
+  output_dir_residents <- "data/output_ebird_bc_residents"
 
+# IMportant you need to so resident species first 
 
-st_transform(st_crs(abd_seasonal)) |>
-  
-
-for (species in bc_species) {
-  # load abundance at 3km
-  try({   # load abundance at 3km
-    abundance<-load_raster(species, product = "abundance",period= "full-year",metric  = "max")
-    abundance_residents<-load_raster(species, product = "abundance",period= "seasonal",metric  = "max")
-    # crop to bc boundary
-    abundance_masked <- mask(crop(abundance, bc_boundary), bc_boundary)
-    abundance_masked_residents <- mask(crop(abundance_residents, bc_boundary), bc_boundary)
-     #rename teh file
+for (species in bc_species_resident) {
+  try({
+    # Load rasters
+    abundance_residents <- load_raster(species, product = "abundance", period = "seasonal", metric = "max")
+    
+    # Crop/mask
+    abundance_masked_residents <- mask(crop(abundance_residents, bc_boundary_proj), bc_boundary_proj)
+    
+    # Filenames
     sp_name <- gsub(" ", "_", species)
-    out_file <- file.path(output_dir, paste0(sp_name, "abundance_full-year_max_3km_BC.tif"))
-    #Save to file 
-    writeRaster(r, out_file, overwrite = TRUE)
-    cat("✅ Saved:", out_file, "\n")
+    out_file_season <- file.path(output_dir_residents, paste0(sp_name, "_abundance_resident_seasonal_max_3km_BC.tif"))
+    
+    # Save (skip if exists OR set overwrite = TRUE)
+    if (!file.exists(out_file_season)) {
+      writeRaster(abundance_masked_residents, out_file_season, overwrite = FALSE)
+    }
+    
+    cat("✅ Saved (or already existed):", basename(out_file_season), "\n")
   }, silent = TRUE)
 }
-    
-    
 
+# For the rest of the species, this probably will include some empty rasters 
+output_dir <- "data/output_ebird_bc"
 
-for (species in grassland_species) {
-  # download seasonal abundance at 3km
-  ebirdst_download_status(species, pattern = "abundance_seasonal_mean_3km")
+# for teh rest of species # NNED TO CLEAN THIS CODE
   
-  # load breeding season relative abundance
-  abd <- load_raster(species, period = "seasonal") |>
-    subset("breeding")
-  # crop and mask to Montana
-  abd_masked <- mask(crop(abd, mt_boundary), mt_boundary)
-  # convert to binary, presence-absence
-  range_mt[[species]] <- abd_masked > 0
+for (species in bc_species) {
+  try({
+    # Load raster (full-year abundance at 3 km)
+    abundance <- load_raster(species, product = "abundance", period = "full-year", metric = "max")
+    
+    # Crop/mask to BC boundary
+    abundance_masked <- mask(crop(abundance, bc_boundary_proj), bc_boundary_proj)
+    
+    # Filename
+    sp_name <- gsub(" ", "_", species)
+    out_file_full <- file.path(output_dir, paste0(sp_name, "_abundance_full-year_max_3km_BC.tif"))
+    
+    # Save (skip if exists OR set overwrite = TRUE)
+    if (!file.exists(out_file_full)) {
+      writeRaster(abundance_masked, out_file_full, overwrite = FALSE)
+    }
+    
+    cat("✅ Saved (or already existed):", basename(out_file_full), "\n")
+  }, silent = TRUE)
 }
-
-ebirdst_download_status( "cinnamon teal",pattern = "full-year_max_3km", download_occurrence = TRUE,dry_run = FALSE,force = TRUE)
-
-
-raster_cite_fullyear <- load_raster(species = "Cinnamon Teal", product = "abundance",period  = "full-year",metric  = "max")
-
-
 
 
 # ================================
-# 6) HELP / DOCS
+# 6) RENAME THE RASTERS for the migrants 
 # ================================
 
-# Open help for ebirdst_download_status (function docs)
-?ebirdst_download_status
 
-# Open help for load_raster
-?load_raster
+# 6a) RENAME THE RASTERS for migratory species
 
-# 0.1 ebird Key  -----------------------------------------------------------------
-#An access key is required to download eBird Status and Trends data
-#1. Get a key by filling out the request form at https://ebird.org/st/request
-#2. Save the key using 
-set_ebirdst_access_key("f6me7thr51ul") # Valid until March 2026
-getwd() 
+rasters_folder <- "data/output_ebird_bc"
 
-ebirdst_version()
-# Part 1 explore and download the data  --------------------------------------------------
+raster_files <- list.files(rasters_folder, pattern = "\\.tif$", full.names = TRUE)
 
+# example of one raster
+r1<- rast("data/output_ebird_bc/Willow_Ptarmigan_abundance_full-year_max_3km_BC.tif" )
 
-
-
-# A species list 
-
-bc_species<-unique(bc_list$common_name)
-
-bc_species <- c("Baird's Sparrow",
-                       "Bobolink",
-                       "Chestnut-collared Longspur",
-                       "Sprague's Pipit",
-                       "Upland Sandpiper",
-                       "Western Meadowlark")
+# the function to rename them 
+rasters_renamed <- lapply(raster_files, function(f) {
+  r <- rast(f)
+  # Extract the filename (without extension)
+  fname <- tools::file_path_sans_ext(basename(f))
+  # Split and get first two words
+  parts <- strsplit(fname, "_")[[1]]
+  newname <- paste(parts[1:min(2, length(parts))], collapse = "_")
+  # Rename the layer inside the raster
+  names(r) <- newname
+  return(r)
+})
 
 
+####
+# 6a)Export the raster renamed into a new directory
+####
 
-# Goal: map areas of importance during the breeding season for the set of six
-# grassland species in Montana.
+outdir <- "data/output_rasters_ebird_bc_named"
 
-# start by producing a map of richness for these species
-# produce binary range rasters for each species in Montana
-range_mt <- list()
-for (species in grassland_species) {
-  # download seasonal abundance at 3km
-  ebirdst_download_status(species, pattern = "abundance_seasonal_mean_3km")
-  
-  # load breeding season relative abundance
-  abd <- load_raster(species, period = "seasonal") |>
-    subset("breeding")
-  # crop and mask to Montana
-  abd_masked <- mask(crop(abd, mt_boundary), mt_boundary)
-  # convert to binary, presence-absence
-  range_mt[[species]] <- abd_masked > 0
+if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE) # make sure directory exist 
+
+
+# Loop through your list of rasters
+for (r in rasters) {
+  # Use the layer name as filename
+  nm <- names(r)
+  outfile <- file.path(outdir, paste0(nm, "abundance_full-year_max_3km_BC.tif"))
+  writeRaster(r, outfile, overwrite = TRUE)
+  cat("✅ Saved:", outfile, "\n")
 }
-# sum across species to calculate richness
-richness <- sum(rast(range_mt), na.rm = TRUE)
-# make a simple map
-plot(richness, axes = FALSE)
 
-abd[[1]]
-abd_masked[[1]]
-range_mt[[1]]
+r2<- rast("data/output_rasters_ebird_bc_named/Alder_Flycatcherabundance_full-year_max_3km_BC.tif" )
+
+# ================================
+# 6) RENAME THE RASTERS for the residents
+# ================================
 
 
+# 6a) RENAME THE RASTERS for migratory species
+
+rasters_folder <- "data/output_ebird_bc_residents"
+
+raster_files_residents <- list.files(rasters_folder, pattern = "\\.tif$", full.names = TRUE)
+
+# the function to rename them 
+rasters_renamed_residents <- lapply(raster_files_residents, function(f) {
+  r <- rast(f)
+  # Extract the filename (without extension)
+  fname <- tools::file_path_sans_ext(basename(f))
+  # Split and get first two words
+  parts <- strsplit(fname, "_")[[1]]
+  newname <- paste(parts[1:min(2, length(parts))], collapse = "_")
+  # Rename the layer inside the raster
+  names(r) <- newname
+  return(r)
+})
+####
+# 6a)Export the raster renamed into a new directory
+####
+
+outdir_res<- "data/output_rasters_ebird_bc_residents_named"
+
+if (!dir.exists(outdir_res)) dir.create(outdir_res, recursive = TRUE) # make sure directory exist 
 
 
-
-
-
-
-
-
-
-
-
-
-###_###_###_###_###_#
-# The exercise code 
-# Explore available status data products species
-unique(ebirdst_runs$common_name)
-
-# examine seasonal dates and quality scores for chimney swift
-glimpse(filter(ebirdst_runs, common_name == "Chimney Swift"))
-
-
-# ├ Downloading data ----
-
-# default data download location
-ebirdst_data_dir()
-# list available files for Golden Eagle
-ebirdst_download_status("Golden Eagle", dry_run = TRUE)
-# download 3 km estimates for Golden Eagle, a migrant
-ebirdst_download_status("Golden Eagle", pattern = "3km")
-# download 3 km estimates for Tui, a resident
-ebirdst_download_status("Tui", pattern = "3km")
-
-
+# Loop through your list of rasters
+for (r in rasters_renamed_residents) {
+  # Use the layer name as filename
+  nm <- names(r)
+  outfile <- file.path(outdir, paste0(nm, "abundance_resident_max_3km_BC.tif"))
+  writeRaster(r, outfile, overwrite = TRUE)
+  cat("✅ Saved:", outfile, "\n")
+}

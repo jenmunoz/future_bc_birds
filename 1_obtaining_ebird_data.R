@@ -6,7 +6,9 @@
 ## ## Specifically calculating  number of species per pixel
 ## This code does the following:
 ## 0) Download e-bird 3*3 km rasters fro all BC birds
-## i) Read tiff files into Rasters 
+## 
+## The subsequent scripts do the other steps 
+##i) Read tiff files into Rasters 
 ## ii) Reclassify rasters (0,1)
 ## iii) Sum rasters generating total number of species oer pixel
 ##
@@ -20,8 +22,6 @@
 
 # Install required Libraries 
 # To access ebird data 
-library(ebirdst)
-library(ggplot2)
 
 # Data Manipulation
 install.packages("tidyverse")
@@ -70,17 +70,16 @@ library(ggplot2) # fpr plots
 # ================================
 # ---- eBird S&T access key ----
 # An access key is required to download eBird Status & Trends data.
-# 1) Request a key here: https://ebird.org/st/request
+# 1) Request a key here or look at your key here  https://ebird.org/st/request
 # 2) Save the key for this session with set_ebirdst_access_key().
-#    NOTE: Do NOT hard-code real keys in scripts stored in repos. Prefer ~/.Renviron.
-#    usethis::edit_r_environ(); add a line like: EBIRDST_KEY="your-key"
-#    Then call set_ebirdst_access_key(Sys.getenv("EBIRDST_KEY")).
+#    
 
-set_ebirdst_access_key("YOUR_KEY_HERE")  # <- replace for local testing only
+set_ebirdst_access_key("f6me7thr51ul")  # <- replace for local testing only
 # Where am I running this from (useful for path debugging)?
 getwd()
 # ebirdst package version (useful for reproducibility)
-ebirdst_version()
+ebirdst_version() # Uisng version year 2022
+
 
 # ================================
 # 1) CHOOSING THE DATA DIRECTORY
@@ -91,9 +90,10 @@ ebirdst_version()
 # 2) tools::R_user_dir("ebirdst", which = "data")
 ebirdst_data_dir()
 
-# If you want to override the default for THIS SESSION ONLY:
+# If you want to override the default for THIS SESSION ONLY: this will be the folder where data is downloaded 
 # (Pick a fast local SSD or a managed project folder.)
-Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Documents/BirdsCanada/1_jv_science_coordinator_role/1_projects/9_future_for_bc_birds/e_bird_data_bc")
+#Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Documents/BirdsCanada/1_jv_science_coordinator_role/1_projects/9_future_for_bc_birds/e_bird_data_bc")
+Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/0_ebird_data_layers")
 ebirdst::ebirdst_data_dir()
 
 # ================================
@@ -102,26 +102,33 @@ ebirdst::ebirdst_data_dir()
 
 # This list is filtered to exclude rare/accidental, introduced, uncertain, and extirpated statuses.
 # Assumes the CSV has at least columns: "status" and "common_name".
-bc_list_full <- read.csv("data/bc_birds_checklist_avibase.csv", stringsAsFactors = FALSE) %>%
+
+bc_list_full <- read.csv("data/list/bc_birds_checklist_avibase_reviewed.csv", stringsAsFactors = FALSE) %>%
   as_tibble()
-View( bc_list_full)
-# I want to see how many species are rare/accidental # I dedided to exclude thsi ones from teh analyses ( ask David if he agrees)
-bc_list_full_accidental <- read.csv("data/bc_birds_checklist_avibase.csv", stringsAsFactors = FALSE) %>%
-  filter(status %in% c("Rare/Accidental"))
+#View( bc_list_full)
 
-
+# I want to see how many species are rare/accidental # This are potentiall to be deleted froom analyses  ( ask David if he agrees)
+# bc_list_full_accidental <- read.csv("data/list/bc_birds_checklist_avibase.csv", stringsAsFactors = FALSE) %>%
+#   filter(status %in% c("Rare/Accidental"))
 #View(bc_list_full)
+
 # Safety checks in case the CSV schema changes
 #stopifnot(all(c("status", "common_name") %in% names(bc_list)))
+# bc_list <- bc_list_full%>%
+#   filter(!status %in% c("Rare/Accidental", "Introduced", "Uncertain", "Extirpated"))
+
 bc_list <- bc_list_full%>%
-  filter(!status %in% c("Rare/Accidental", "Introduced", "Uncertain", "Extirpated"))
+  filter(!conclusion_include %in% c("exclude"))
+
+
 # Quick peeks
-View(bc_list)
+#View(bc_list)
 names(bc_list)
 unique(bc_list$status)
+unique(bc_list$conclusion_include)
 unique(bc_list$common_name)
 
-# Vector of species names we’ll potentially loop over later
+# Vector of species names we’ll potentially loop over later # this is the whole list of BC bird species 
 bc_species <- unique(bc_list$common_name)
 
 # ================================
@@ -130,32 +137,65 @@ bc_species <- unique(bc_list$common_name)
 # If not attached, reference explicitly as ebirdst::ebirdst_runs
 # Example: explore Cinnamon Teal availability
 glimpse(dplyr::filter(ebirdst::ebirdst_runs, common_name == "Cinnamon Teal"))
+
+# This shows all the species that have data in ebird
 # View(ebirdst_runs$common_name)
-# View(ebirdst_runs)
 
 # ================================
 # 4) See FOR HOW MANY BC SPECIES WE HAVE EBIRD DATA 
 # ================================
+View(ebirdst_runs) # the overall list of ebird species 
+# list of Bc birds
+full_list<-bc_list %>% dplyr::select(sci_name, common_name,Family,Order,why)
 
 match_species_bc_ebird <- bc_list %>%
   left_join(ebirdst_runs, by = "common_name")
 #View(match_species_bc_ebird )
+
 # for which species we dont have it
 missing_species_bc_ebird <- match_species_bc_ebird %>%
-  filter(is.na(scientific_name))
-#View(missing_species_bc_ebird )
-print(missing_species_bc_ebird$sci_name)
+  filter(is.na(scientific_name)) %>% 
+  dplyr::select(common_name, sci_name, is_resident) %>% 
+  mutate(ebird_data="no")
+
+
+# #View(missing_species_bc_ebird )
+# print(missing_species_bc_ebird$sci_name) # list pf secies for which we dont have the data 
+# print(missing_species_bc_ebird$common_name) # list pf secies for which we dont have the data 
+
 # species for which we have the data  #### This is the list of species that I need for later 
 list_species_bc_ebird <- bc_list %>%
-  inner_join(ebirdst_runs, by = "common_name")
-#House wren corrected manually
+  inner_join(ebirdst_runs, by = "common_name") %>% 
+  dplyr::select(common_name, sci_name, is_resident, species_code) %>% 
+  mutate(ebird_data="yes")
+
+
+# Create a list that documents which species where included and whcih ones where not, plus which ones have ebird data 
+annotated_list <- full_list %>% 
+  left_join(list_species_bc_ebird, by = "common_name") %>% 
+  left_join(missing_species_bc_ebird, by = "common_name") %>% 
+  mutate(ebird_data = coalesce(ebird_data.x, ebird_data.y) ) %>%
+  mutate(sci_name = coalesce(sci_name.x, sci_name.y) ) %>% # coalescence gives me the first value that exists
+  mutate(is_resident = coalesce(is_resident.x, is_resident.y) ) %>%
+  dplyr::select(-ebird_data.x, -ebird_data.y,-sci_name.x,-sci_name.y,-is_resident.x,-is_resident.y) %>% 
+  dplyr::select(Order, Family, sci_name, common_name, ebird_data,is_resident,why )
+  
+dim(annotated_list)
+#write.csv(annotated_list, "output_tables/annotated_list_Bc_species_status.csv", row.names = FALSE)
+
+# There  are some species that I need to correct manually 
+# House wren corrected manually
+# Correct manually Western/Eastern Cattle Egret
 # Check manually those species with the ebirdst_runs
 
 length(list_species_bc_ebird$common_name)
+print(list_species_bc_ebird$common_name)
 View(list_species_bc_ebird)
 
+print(bc_list$common_name) # the whole list of bc species
+
 # ================================
-# 4) DOWNLOAD DATA FOR ONE SPECIES
+# 4) DOWNLOAD DATA FOR ONE SPECIES *** Practice
 # ================================
 
 # The function below checks what exists (dry_run = TRUE) before downloading.
@@ -166,6 +206,10 @@ View(list_species_bc_ebird)
 # DRY RUN: list what would be downloaded for Cinnamon Teal
 ebirdst_download_status( "cinnamon teal",pattern = "full-year_max_3km",download_occurrence = TRUE,dry_run = TRUE)
 
+ebirdst_download_status( "Tufted Puffin",pattern = "full-year_max_3km",download_occurrence = TRUE,dry_run = TRUE)
+
+View(ebirdst_runs)
+
 # ACTUAL DOWNLOAD
 ebirdst_download_status( "cinnamon teal",pattern = "full-year_max_3km", download_occurrence = TRUE,dry_run = TRUE,force = TRUE)
 ebirdst_download_status( "cinnamon teal",pattern = "full-year_max_3km", download_occurrence = FALSE,dry_run = FALSE,force = TRUE)
@@ -175,7 +219,7 @@ ebirdst_download_status( "house finch",pattern = "abundance_seasonal_max_3km", d
 ebirdst_download_status( "American Dipper ",pattern = "_3km", download_occurrence = FALSE,dry_run = TRUE,force = TRUE)
 
 # ================================
-# 5) LOAD RASTER PRODUCTS
+# 5) LOAD RASTER PRODUCTS for one species *** Practice
 # ================================
 
 # load_raster() loads a specific raster from the downloaded products.
@@ -189,7 +233,7 @@ ebirdst_download_status( "American Dipper ",pattern = "_3km", download_occurrenc
 # - period: "full-year" (or a season)
 # - metric: for "abundance": e.g., "mean", "max"; for "occurrence": often "mean" or "max"
 # Below we load occurrence "max" for full-year.
-
+load_raster()
 raster_cite_fullyear <- load_raster(species = "Cinnamon Teal", product = "abundance",period= "full-year",metric  = "max")
 
 raster_housefinch_fullyear <- load_raster(species = "house finch", product = "abundance", period="seasonal", metric="max")  
@@ -200,24 +244,41 @@ raster_housefinch_fullyear <- load_raster(species = "house finch", product = "ab
 # ================================
 # 6) RUN A LOOP TO DOWNLOAD DATA FOR BC SPECIES 
 # ================================
-# Although we know there is not data for all BC species — only 301 out of 338 — we could still run it for the entire list so that when the package adds new data,
-# the same code can automatically handle those species.  Just make sure to check which species were skipped.
+# Although we know there is not data for all BC species — only 311 out of 356 — 
+# we could still run it for the entire list so that when the package adds new data,
+# the same code can automatically handle those species.  Just make sure to check which species were skipped and 
+# Important make a note for the species that have not data on ebird but are included in teh Bc list
+
+# Important note
+# In the list of BC we have a total of 567 species including introduced species, rare and vagrant species
+# Once we exclude those species that are not "conservation contributors" then we have 338 species 
+# for example  those excluded include introduce, extinct, extirpated, and vagrants species ( this is after recommendation from Andrew, Bc Bird Atlas, Yousif and looking at the number of registers)
+# Of those 338 species, we have ebird data for 310 (see section# 4 See FOR HOW MANY BC SPECIES WE HAVE EBIRD DATA), of those  species 275 are flagged as non-residentare and downloaded, and 35 are flagged as resident. 
+# 
 
 # Option 1: Use all species from the BC list
-# bc_species <- unique(bc_list$common_name)
+#bc_species <- unique(bc_list$common_name) # this is teh full list 
+#print(bc_species)
 
-# Option 2: Use only species that are present in both the BC list and eBird S&T runs
+# Option 2: Use only species that are present in both the BC list and eBird S&T runs [This is teh one we are using for the analyses]
+# this includes only species for which we have ebird data 
 # list_species_bc_ebird <- bc_list %>%
 #   inner_join(ebirdst_runs, by = "common_name")
 
 bc_species <- unique(list_species_bc_ebird$common_name)
 
-# Identify resident species (these have a different data product name)
+# Identify resident species (these have a different data product name and that is why I am downloading them independently) 
+# interestingly some species that are resident are not in the list of resident = yes such as crows  or bald eagle ## why???
+# we take the list of bc species and filter residents 
 bc_species_resident_df <- list_species_bc_ebird %>%
   filter(is_resident == "TRUE")
 
 bc_species_resident<-unique(bc_species_resident_df$common_name)
-# LOOP over the list of species and download data, you will notice that it skipped some species, that do not have "full-year_max" data 
+bc_species_resident_code<-unique(bc_species_resident_df$species_code)
+
+
+# LOOP over the list of all bc species and download data, you will notice that it skipped some species, that do not have "full-year_max" data ( those are  resident species )
+# this only downloads data for 276 species 
 
 for (species in bc_species) {
   cat("/n>>> Downloading:", species, "/n")
@@ -231,10 +292,11 @@ for (species in bc_species) {
 # For some reason, their data product is named "abundance_seasonal_max_3km".
 # Make sure force = FALSE so you don’t overwrite other species
 
+
 for (species in bc_species_resident) {
   cat("/n>>> Downloading residents:", species, "/n")
   # Download seasonal abundance data for resident species at 3 km
-  try({ ebirdst_download_status( species,pattern = "abundance_seasonal_max_3km",download_occurrence = FALSE,dry_run = FALSE,force = FALSE  )
+  try({ ebirdst_download_status( species,pattern = "abundance_seasonal_max_3km",download_occurrence = FALSE,dry_run =FALSE,force = FALSE  )
   }, silent = TRUE)
 }
 
@@ -243,20 +305,19 @@ for (species in bc_species_resident) {
 # ================================
 
 # The original boundary is projected as NAD 1983 BC Environment Albers
-bc_boundary<-raster
-
-# Read shapefile
+# Get the working document 
 getwd()
+# Read shapefile
 bc_boundary <- sf::st_read("data/layers/BC_boundary_layer.shp") # vector file 
 
 crs(bc_boundary)
 ext(bc_boundary)      # spatial extent
 res(bc_boundary)      # resolution
 
-# Ensure clip geometry matches each raster's CRS
+# Ensure clip geometry matches each raster's CRS, so here we reprojet the Bc layer into the projection of teh rasters, alternatively i can reproject al the ebird  rasters to bc alberts, I decided that projecting one will save me some code 
 
-bc_boundary_proj <- bc_boundary|>
-  st_transform("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs") |> # transform coordinate system to match the raster data
+bc_boundary_proj <- bc_boundary %>% 
+  st_transform("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs") %>%  # transform coordinate system to match the raster data from ebird
   vect()
 
 #vect() # transforms to terra object spat vector 
@@ -268,11 +329,15 @@ crs(bc_boundary_proj)
 # ================================
 
 # try(..., silent = TRUE) means if one species fails (e.g., not available), the loop continues.
-# NOte that here we work with residents nad other speceis separated because teh names of teh files are differet 
+# Note that here we work with residents and the non-resident species separated because teh names oof the files are different 
 
-  output_dir_residents <- "data/output_ebird_bc_residents"
+output_dir_residents<-"data/output_bc_crop/residents"
 
-# IMportant you need to so resident species first 
+#output_dir_residents <- "data/output_ebird_bc_residents"
+
+# Important you need to do resident species first, and they specify that you dont want them to ve overwrite it 
+
+#abundance_residents <- load_raster("Black Oystercatcher", product = "abundance", period = "seasonal", metric = "max")
 
 for (species in bc_species_resident) {
   try({
@@ -286,7 +351,7 @@ for (species in bc_species_resident) {
     sp_name <- gsub(" ", "_", species)
     out_file_season <- file.path(output_dir_residents, paste0(sp_name, "_abundance_resident_seasonal_max_3km_BC.tif"))
     
-    # Save (skip if exists OR set overwrite = TRUE)
+    # Save (important skip if exists OR set overwrite = TRUE)
     if (!file.exists(out_file_season)) {
       writeRaster(abundance_masked_residents, out_file_season, overwrite = FALSE)
     }
@@ -296,10 +361,11 @@ for (species in bc_species_resident) {
 }
 
 # For the rest of the species, this probably will include some empty rasters 
-output_dir <- "data/output_ebird_bc"
+#output_dir <- "data/output_ebird_bc" # old folder 
+output_dir<-"data/output_bc_crop/other"
 
-# for teh rest of species # NNED TO CLEAN THIS CODE
-  
+# For the rest of species # need to clean this code # It is important to run the resident species first because when we run this for all species it could override the residents as an empty raster otherwise 
+
 for (species in bc_species) {
   try({
     # Load raster (full-year abundance at 3 km)
@@ -314,7 +380,7 @@ for (species in bc_species) {
     
     # Save (skip if exists OR set overwrite = TRUE)
     if (!file.exists(out_file_full)) {
-      writeRaster(abundance_masked, out_file_full, overwrite = FALSE)
+      writeRaster(abundance_masked, out_file_full, overwrite = FALSE) # this makes sure we are not overwriting some species
     }
     
     cat("✅ Saved (or already existed):", basename(out_file_full), "\n")
@@ -323,20 +389,20 @@ for (species in bc_species) {
 
 
 # ================================
-# 6) RENAME THE RASTERS for the migrants 
+# 6) RENAME THE RASTERS for the non resident
 # ================================
+getwd()
+# 6a) RENAME THE RASTERS for non-resident species
 
-
-# 6a) RENAME THE RASTERS for migratory species
-
-rasters_folder <- "data/output_ebird_bc"
+#rasters_folder <- "data/output_ebird_bc"
+rasters_folder<-"data/output_bc_crop/other"
 
 raster_files <- list.files(rasters_folder, pattern = "\\.tif$", full.names = TRUE)
 
 # example of one raster
 r1<- rast("data/output_ebird_bc/Willow_Ptarmigan_abundance_full-year_max_3km_BC.tif" )
 
-# the function to rename them 
+# the function to rename them including a name inside the raster
 rasters_renamed <- lapply(raster_files, function(f) {
   r <- rast(f)
   # Extract the filename (without extension)
@@ -354,13 +420,14 @@ rasters_renamed <- lapply(raster_files, function(f) {
 # 6a)Export the raster renamed into a new directory
 ####
 
-outdir <- "data/output_rasters_ebird_bc_named"
+#outdir <- "data/output_rasters_ebird_bc_named"
+
+outdir <- "data/output_bc_crop_named_other"
 
 if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE) # make sure directory exist 
 
-
 # Loop through your list of rasters
-for (r in rasters) {
+for (r in rasters_renamed) {
   # Use the layer name as filename
   nm <- names(r)
   outfile <- file.path(outdir, paste0(nm, "abundance_full-year_max_3km_BC.tif"))
@@ -371,15 +438,17 @@ for (r in rasters) {
 r2<- rast("data/output_rasters_ebird_bc_named/Alder_Flycatcherabundance_full-year_max_3km_BC.tif" )
 
 # ================================
-# 6) RENAME THE RASTERS for the residents
+# 7) RENAME THE RASTERS for the residents
 # ================================
 
 
-# 6a) RENAME THE RASTERS for migratory species
+# 7a) RENAME THE RASTERS for non-resident species
 
-rasters_folder <- "data/output_ebird_bc_residents"
+#rasters_folder <- "data/output_ebird_bc_residents"
+rasters_folder <- "data/output_bc_crop/residents"
 
-raster_files_residents <- list.files(rasters_folder, pattern = "\\.tif$", full.names = TRUE)
+
+outdir_res<- "data/output_bc_crop_named_residents"
 
 # the function to rename them 
 rasters_renamed_residents <- lapply(raster_files_residents, function(f) {
@@ -393,11 +462,12 @@ rasters_renamed_residents <- lapply(raster_files_residents, function(f) {
   names(r) <- newname
   return(r)
 })
+class(rasters_renamed_residents )
 ####
-# 6a)Export the raster renamed into a new directory
+# 7b)Export the raster renamed into a new directory
 ####
 
-outdir_res<- "data/output_rasters_ebird_bc_residents_named"
+outdir_res<- "data/output_bc_crop_named_residents"
 
 if (!dir.exists(outdir_res)) dir.create(outdir_res, recursive = TRUE) # make sure directory exist 
 
@@ -406,7 +476,113 @@ if (!dir.exists(outdir_res)) dir.create(outdir_res, recursive = TRUE) # make sur
 for (r in rasters_renamed_residents) {
   # Use the layer name as filename
   nm <- names(r)
-  outfile <- file.path(outdir, paste0(nm, "abundance_resident_max_3km_BC.tif"))
+  outfile <- file.path(outdir_res, paste0(nm, "abundance_resident_max_3km_BC.tif"))
   writeRaster(r, outfile, overwrite = TRUE)
   cat("✅ Saved:", outfile, "\n")
 }
+
+# ================================
+# 8) Create the list of species included 
+# ================================
+
+#write.csv(annotated_list, "output_tables/annotated_list_Bc_species_status.csv", row.names = FALSE)
+
+#sorting_attributes_jv<-read.csv("data/list/bc_jv_birds_list_sorting_attributes.csv")
+
+
+# ================================
+# 8) Try some stacking
+# ================================
+
+
+
+# some stacking classical approach 
+##############
+
+r_stack <- rast(rasters_renamed_residents)              # check taht layers are named by species already
+raster_files_residents[[1]]
+
+folder_rasters_combos<-"data/output_bc_crop_named_residents"
+
+
+#files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE)
+
+process_stack <- function(r_stack) {
+  
+  # 1) Reclassify all layers: <=0 → 0, >0 → 1
+  rcl <- matrix(c(-Inf, 0, 0,
+                  0, Inf, 1),
+                ncol = 3, byrow = TRUE)
+  
+  r_bin <- classify(r_stack, rcl)
+  
+  # 2) Pixel-wise sum across layers
+  sum_raster <- app(r_bin, sum, na.rm = TRUE)
+  
+  # 3) Mask: TRUE if at least one layer has a 0
+  zero_mask <- app(r_bin, function(x) any(x == 0))
+  
+  # 4) Replace NA in the sum only where zero_mask is TRUE
+  sum_raster[is.na(sum_raster) & zero_mask] <- 0
+  
+  return(sum_raster)
+}
+
+result_raster <- process_stack(r_stack)
+
+plot(result_raster )
+
+
+## 1) Project raster to match BC boundary CRS ----
+# (safer than hard-coding a projection string)
+result_proj <- project(result_raster, crs(bc_boundary_proj))
+
+## 2) Crop/mask to BC boundary (optional but usually nicer) ----
+result_bc <- mask(crop(result_proj, bc_boundary_proj), bc_boundary_proj)
+
+## 3) Get sensible legend limits ----
+max_val <- global(result_bc, "max", na.rm = TRUE)[1, 1]
+
+## 4) Plot map ----
+par(mar = c(0, 0, 0, 0))
+
+# Base: BC boundary
+plot(bc_boundary_proj, col = "grey90", border = "grey40",
+     axes = FALSE, main = "")
+
+# Add raster on top
+plot(result_bc,
+     col = viridis(100),
+     legend = FALSE,
+     add = TRUE)
+
+# Optional: add title separately (for nicer spacing)
+title("Number of resident species across BC", line = -2, cex.main = 1.2)
+
+# 5) Legend with fields::image.plot ----
+fields::image.plot(
+  zlim       = c(0, max_val),
+  legend.only = TRUE,
+  col        = viridis(100),
+  breaks     = seq(0, max_val, length.out = 101),
+  smallplot  = c(0.15, 0.85, 0.12, 0.15),   # horizontal legend
+  horizontal = TRUE,
+  axis.args  = list(
+    at     = c(0, round(max_val / 2), max_val),
+    labels = c("Low", "Medium", "High"),
+    fg         = "black",
+    col.axis   = "black",
+    cex.axis   = 0.8,
+    lwd.ticks  = 0.5,
+    padj       = -1.5
+  ),
+  legend.args = list(
+    text = "Number of resident species",
+    side = 3,
+    col  = "black",
+    cex  = 1,
+    line = 0
+  )
+)
+
+

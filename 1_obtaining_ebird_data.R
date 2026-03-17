@@ -42,6 +42,13 @@ install.packages("ebirdst")
 install.packages("rmapshaper")
 install.packages("terra")
 
+#Install ebirdst from GitHub with:
+  
+if (!requireNamespace("remotes", quietly = TRUE)) {
+    install.packages("remotes")
+  }
+# remotes::install_github("ebird/ebirdst")
+install.packages("ebirdst", repos = c('https://ebird.r-universe.dev', 'https://cloud.r-project.org'))
 
 # Load necessary libraries
 library(dplyr) # Essential for data manipulation with functions to filter, arrange, summarize, etc.
@@ -64,10 +71,11 @@ library(terra) # For working with raster and vector data in spatial analysis
 library(ebirdst) # ebird data 
 library(ggplot2) # fpr plots
 
-
 # ================================
 # 0) SETUP & ACCESS KEY
 # ================================
+# Check teh version of the data that we are using 
+ebirdst::ebirdst_version() # $status_version_year  1] 2023
 # ---- eBird S&T access key ----
 # An access key is required to download eBird Status & Trends data.
 # 1) Request a key here or look at your key here  https://ebird.org/st/request
@@ -78,7 +86,6 @@ set_ebirdst_access_key("f6me7thr51ul")  # <- replace for local testing only
 # Where am I running this from (useful for path debugging)?
 getwd() # shoudl be [1] "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds"
 # ebirdst package version (useful for reproducibility)
-ebirdst_version() # Uisng version year 2022
 
 # ================================
 # 1) CHOOSING THE DATA DIRECTORY

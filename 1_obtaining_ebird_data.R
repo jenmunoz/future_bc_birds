@@ -6,7 +6,10 @@
 ## ## Specifically calculating  number of species per pixel
 ## This code does the following:
 ## 0) Download e-bird 3*3 km rasters fro all BC birds
-## 
+## 1) It crops to Bc boundary 
+## 2) It projects bc boundary to match ebird
+## 3) In organizes data in folder for future analyses
+
 ## The subsequent scripts do the other steps 
 ##i) Read tiff files into Rasters 
 ## ii) Reclassify rasters (0,1)
@@ -112,7 +115,6 @@ bc_list_full <- read.csv("data/list/bc_birds_checklist_avibase_reviewed.csv", st
 #View( bc_list_full)
 dim(bc_list_full)
 
-
 # here we filter species that for any reason are not a contributor to Bc diversity
 bc_list <- bc_list_full%>%
   filter(!conclusion_include %in% c("exclude"))
@@ -128,18 +130,18 @@ unique(bc_list$common_name)
 # Vector of species names we’ll potentially loop over later # this is the whole list of BC bird species 
 bc_species <- unique(bc_list$common_name)
 
-# ================================
-# 2) SPECIES AT RISK LIST FOR BC
-# ================================
-bc_SARA_list <- read.csv("data/list/bird_species_at_risk_list_02_18_2026.csv", stringsAsFactors = FALSE) %>%
-  as_tibble()
-
-bc_list_SARA_join <- bc_list %>% 
-  full_join(bc_SARA_list, by = "common_name") %>%   # some species are not joining properly (e.g., owls)
-  filter(!is.na(Family)) %>% 
-  filter(!is.na(schedule)) 
-
-  View(bc_list_SARA_join)
+# # ================================
+# # 2) SPECIES AT RISK LIST FOR BC
+# # ================================
+# bc_SARA_list <- read.csv("data/list/bird_species_at_risk_list_02_18_2026.csv", stringsAsFactors = FALSE) %>%
+#   as_tibble()
+# 
+# bc_list_SARA_join <- bc_list %>% 
+#   full_join(bc_SARA_list, by = "common_name") %>%   # some species are not joining properly (e.g., owls)
+#   filter(!is.na(Family)) %>% 
+#   filter(!is.na(schedule)) 
+# 
+#   View(bc_list_SARA_join)
 # ================================
 # 3) EXPLORE AVAILABLE RUNS
 # ================================
@@ -156,12 +158,11 @@ glimpse(dplyr::filter(ebirdst::ebirdst_runs, common_name == "Cinnamon Teal"))
 View(ebirdst_runs) # the overall list of ebird species 
 # list of Bc birds
 full_list<-bc_list %>% dplyr::select(sci_name, common_name,Family,Order,why)
-
-dim(full_list)
+#dim(full_list)
 match_species_bc_ebird <- bc_list %>%
   left_join(ebirdst_runs, by = "common_name")
-View(match_species_bc_ebird )
-dim(match_species_bc_ebird)
+#View(match_species_bc_ebird )
+#dim(match_species_bc_ebird)
 
 # for which species we dont have it
 
@@ -210,7 +211,6 @@ print(bc_list$common_name) # the whole list of bc species
 # ================================
 # 4) DOWNLOAD DATA FOR ONE SPECIES *** Practice
 # ================================
-
 # The function below checks what exists (dry_run = TRUE) before downloading.
 # pattern = "full-year_max_3km" targets the 3-km full-year max product.
 # Set download_occurrence=TRUE if you also want occurrence rasters.
@@ -218,7 +218,11 @@ print(bc_list$common_name) # the whole list of bc species
 
 # DRY RUN: list what would be downloaded for Cinnamon Teal
 ebirdst_download_status( "cinnamon teal",pattern = "full-year_max_3km",download_occurrence = TRUE,dry_run = TRUE)
-ebirdst_download_status( "American Dipper",download_occurrence = TRUE,dry_run = TRUE)
+ebirdst_download_status( "American Dipper",download_occurrence = FALSE,dry_run = TRUE)
+ebirdst_download_status( "house finch",download_occurrence = FALSE,dry_run = TRUE)
+ebirdst_download_status( "cinnamon teal",download_occurrence = FALSE,dry_run = TRUE)
+
+
 View(ebirdst_runs)
 
 # ACTUAL DOWNLOAD
@@ -265,12 +269,11 @@ raster_housefinch_fullyear <- load_raster(species = "house finch", product = "ab
 # for example  those excluded include introduce, extinct, extirpated, and vagrants species ( this is after recommendation from Andrew, Bc Bird Atlas, Yousif and looking at the number of registers)
 # Of those 354 we have data for 351 (see section# 4 See FOR HOW MANY BC SPECIES WE HAVE EBIRD DATA), of those  species 275 are flagged as non-residentare and downloaded, and 35 are flagged as resident. 
 # 
-
 # Option 1: Use all species from the BC list
 #bc_species <- unique(bc_list$common_name) # this is teh full list 
 #print(bc_species)
 
-# Option 2: Use only species that are present in both the BC list and eBird S&T runs [This is teh one we are using for the analyses]
+# Option 2: Use only species that are present in both the BC list and eBird S&T runs [This is the one we are using for the analyses]
 # this includes only species for which we have ebird data 
 # list_species_bc_ebird <- bc_list %>%
 #   inner_join(ebirdst_runs, by = "common_name")
@@ -302,7 +305,6 @@ for (species in bc_species) {
 # For some reason, their data product is named "abundance_seasonal_max_3km".
 # Make sure force = FALSE so you don’t overwrite other species
 
-
 for (species in bc_species_resident) {
   cat("/n>>> Downloading residents:", species, "/n")
   # Download seasonal abundance data for resident species at 3 km
@@ -313,8 +315,11 @@ for (species in bc_species_resident) {
 # ================================
 # 7) READ BC BOUNDARIES and transform to ebird projection
 # ================================
+#Extract the projection form any raster  that you just downloaded
+raster_ebird_projection <- crs( load_raster(species = "Cinnamon Teal", product = "abundance",period= "full-year",metric  = "max"))
 
 # The original boundary is projected as NAD 1983 BC Environment Albers
+# It is very important to check teh projection for ebird for every year because it changes between 2022 (UNIQUE PROJECTION) and 2023( WGC84)projectios
 # Get the working document 
 getwd()
 # Read shapefile
@@ -327,8 +332,13 @@ ext(bc_boundary)      # spatial extent
 # Ensure clip geometry matches each raster's CRS, so here we reprojet the Bc layer into the projection of teh rasters, alternatively i can reproject al the ebird  rasters to bc alberts, I decided that projecting one will save me some code 
 
 bc_boundary_proj <- bc_boundary %>% 
-  st_transform("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs") %>%  # transform coordinate system to match the raster data from ebird
+  st_transform(raster_ebird_projection) %>%  # transform coordinate system to match the raster data from ebird
   vect()
+
+# # alternatively you can do it directly 
+# bc_boundary_proj <- bc_boundary %>% 
+#   st_transform(8857) %>%  # Equal Earth projection (projected CRS, meters)
+#   vect()
 
 #vect() # transforms to terra object spat vector 
 # check the projection
@@ -339,15 +349,13 @@ crs(bc_boundary_proj)
 # ================================
 
 # try(..., silent = TRUE) means if one species fails (e.g., not available), the loop continues.
-# Note that here we work with residents and the non-resident species separated because teh names oof the files are different 
+# Note that here we work with residents and the non-resident species separated because the names of the files are different 
 
 output_dir_residents<-"data/output_bc_crop/residents"
 
-#output_dir_residents <- "data/output_ebird_bc_residents"
-
-# Important you need to do resident species first, and they specify that you dont want them to ve overwrite it 
-
+# Important you need to do resident species first, and they specify that you dont want them to overwrite it 
 #abundance_residents <- load_raster("Black Oystercatcher", product = "abundance", period = "seasonal", metric = "max")
+
 
 for (species in bc_species_resident) {
   try({
@@ -370,11 +378,11 @@ for (species in bc_species_resident) {
   }, silent = TRUE)
 }
 
+warnings()
 # For the rest of the species, this probably will include some empty rasters 
 #output_dir <- "data/output_ebird_bc" # old folder 
-output_dir<-"data/output_bc_crop/other"
+output_dir<-"data/output_bc_crop/non-residents"
 
-# For the rest of species # need to clean this code # It is important to run the resident species first because when we run this for all species it could override the residents as an empty raster otherwise 
 
 for (species in bc_species) {
   try({
@@ -397,7 +405,7 @@ for (species in bc_species) {
   }, silent = TRUE)
 }
 
-
+# Important make sure that there are not warnings 
 # ================================
 # 6) RENAME THE RASTERS for the non resident
 # ================================
@@ -405,7 +413,7 @@ getwd()
 # 6a) RENAME THE RASTERS for non-resident species
 
 #rasters_folder <- "data/output_ebird_bc"
-rasters_folder<-"data/output_bc_crop/other"
+rasters_folder<-"data/output_bc_crop/non-residents"
 
 raster_files <- list.files(rasters_folder, pattern = "\\.tif$", full.names = TRUE)
 
@@ -429,10 +437,7 @@ rasters_renamed <- lapply(raster_files, function(f) {
 ####
 # 6a)Export the raster renamed into a new directory
 ####
-
-#outdir <- "data/output_rasters_ebird_bc_named"
-
-outdir <- "data/output_bc_crop_named_other"
+outdir <- "data/output_bc_crop_named"
 
 if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE) # make sure directory exist 
 
@@ -451,7 +456,6 @@ r2<- rast("data/output_rasters_ebird_bc_named/Alder_Flycatcherabundance_full-yea
 # 7) RENAME THE RASTERS for the residents
 # ================================
 
-
 # 7a) RENAME THE RASTERS for non-resident species
 r3<- rast("data/output_bc_crop/residents/American_Dipper_abundance_resident_seasonal_max_3km_BC.tif" )
 
@@ -459,8 +463,7 @@ r3<- rast("data/output_bc_crop/residents/American_Dipper_abundance_resident_seas
 rasters_folder_residents <- "data/output_bc_crop/residents"
 raster_files_residents <- list.files(rasters_folder_residents, pattern = "\\.tif$", full.names = TRUE)
 
-
-outdir_res<- "data/output_bc_crop_named_residents"
+outdir_res<- "data/output_bc_crop_named_all"
 
 # the function to rename them 
 rasters_renamed_residents <- lapply(raster_files_residents, function(f) {
@@ -480,7 +483,7 @@ class(rasters_renamed_residents ) # list of rasters
 # 7b)Export the raster renamed into a new directory
 ####
 
-outdir_res<- "data/output_bc_crop_named_residents"
+outdir_res<- "data/output_bc_crop_named_all"
 
 if (!dir.exists(outdir_res)) dir.create(outdir_res, recursive = TRUE) # make sure directory exist 
 
@@ -494,211 +497,57 @@ for (r in rasters_renamed_residents) {
   cat("✅ Saved:", outfile, "\n")
 }
 
-# ================================
-# 8) Create the list of species included 
-# ================================
 
-#write.csv(annotated_list, "output_tables/annotated_list_Bc_species_status.csv", row.names = FALSE)
-
-#sorting_attributes_jv<-read.csv("data/list/bc_jv_birds_list_sorting_attributes.csv")
-
-
-# ================================
-# 8) Try some stacking
-# ================================
-
-
-
-# some stacking classical approach 
-##############
-
-# we need a list of rasters 
-# for example the rasters_renamed_residents
-class(rasters_renamed_residents)
-r_stack <- rast(rasters_renamed_residents)              # check taht layers are named by species already
-# raster_files_residents[[1]]
-
-# We can also just stack teh rasters
-#folder_rasters_combos<-"data/output_bc_crop_named_residents"
-#files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE)
-#raster_stack <- terra::rast(files)
-
-# once tehy are in a list we can process teh stack using teh function 
-
-process_stack <- function(r_stack) {
-  
-  # 1) Reclassify all layers: <=0 → 0, >0 → 1
-  rcl <- matrix(c(-Inf, 0, 0,
-                  0, Inf, 1),
-                ncol = 3, byrow = TRUE)
-  
-  r_bin <- classify(r_stack, rcl)
-  
-  # 2) Pixel-wise sum across layers
-  sum_raster <- app(r_bin, sum, na.rm = TRUE)
-  
-  # 3) Mask: TRUE if at least one layer has a 0
-  zero_mask <- app(r_bin, function(x) any(x == 0))
-  
-  # 4) Replace NA in the sum only where zero_mask is TRUE
-  sum_raster[is.na(sum_raster) & zero_mask] <- 0
-  
-  return(sum_raster)
-}
-
-result_raster <- process_stack(r_stack)
-
-plot(result_raster )
-
-###### here to create a nice plot 
-# ## 1) Project raster to match BC boundary CRS ----
-# # (safer than hard-coding a projection string)
-# result_proj <- project(result_raster, crs(bc_boundary_proj))
-# 
-# ## 2) Crop/mask to BC boundary (optional but usually nicer) ----
-# result_bc <- mask(crop(result_proj, bc_boundary_proj), bc_boundary_proj)
-# 
-# ## 3) Get sensible legend limits ----
-# max_val <- global(result_bc, "max", na.rm = TRUE)[1, 1]
-# 
-# ## 4) Plot map ----
-# par(mar = c(0, 0, 0, 0))
-# 
-# # Base: BC boundary
-# plot(bc_boundary_proj, col = "grey90", border = "grey40",
-#      axes = FALSE, main = "")
-# 
-# # Add raster on top
-# plot(result_bc,
-#      col = viridis(100),
-#      legend = FALSE,
-#      add = TRUE)
-# 
-# # Optional: add title separately (for nicer spacing)
-# title("Number of resident species across BC", line = -2, cex.main = 1.2)
-# 
-# # 5) Legend with fields::image.plot ----
-# fields::image.plot(
-#   zlim       = c(0, max_val),
-#   legend.only = TRUE,
-#   col        = viridis(100),
-#   breaks     = seq(0, max_val, length.out = 101),
-#   smallplot  = c(0.15, 0.85, 0.12, 0.15),   # horizontal legend
-#   horizontal = TRUE,
-#   axis.args  = list(
-#     at     = c(0, round(max_val / 2), max_val),
-#     labels = c("Low", "Medium", "High"),
-#     fg         = "black",
-#     col.axis   = "black",
-#     cex.axis   = 0.8,
-#     lwd.ticks  = 0.5,
-#     padj       = -1.5
-#   ),
-#   legend.args = list(
-#     text = "Number of resident species",
-#     side = 3,
-#     col  = "black",
-#     cex  = 1,
-#     line = 0
-#   )
-# )
-
-
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+# --------------- FOR SARA SPECIES ----------------
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+# Note to remember species considered resident species in the ebird list do not have the full-year_max layer, instead they have  abundance_seasonal_max_3km.t
+# Interestingly non resident species fo ha a abundance_seasonal_max layer, I want to compare those two to see what difference it has 
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
 
 # ================================
-# 9) STack Bc birds biodiversity
+# 1) CHOOSING THE DATA DIRECTORY
 # ================================
-
-# the folder with the rasters 
-folder_rasters_combos<-"data/output_bc_crop_named_all"
-# create a list of teh rasters   
-files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE)
-# If all rasters have the same extent, resolution, and projection, you can stack them:
-raster_stack <- terra::rast(raster_files)
-
-# this is teh fucntion 
-process_stack <- function(r_stack) {
-  
-  # 1) Reclassify all layers: <=0 → 0, >0 → 1
-  rcl <- matrix(c(-Inf, 0, 0,
-                  0, Inf, 1),
-                ncol = 3, byrow = TRUE)
-  
-  r_bin <- classify(r_stack, rcl)
-  
-  # 2) Pixel-wise sum across layers
-  sum_raster <- app(r_bin, sum, na.rm = TRUE)
-  
-  # 3) Mask: TRUE if at least one layer has a 0
-  zero_mask <- app(r_bin, function(x) any(x == 0))
-  
-  # 4) Replace NA in the sum only where zero_mask is TRUE
-  sum_raster[is.na(sum_raster) & zero_mask] <- 0
-  
-  return(sum_raster)
-}
-
-
-# Apply the function 
-bc_all_birds_hotspot <- process_stack(raster_stack )
-
-plot(bc_all_birds_hotspot )
-
-
-# ================================
-# 9) Write raster
-# ================================
-
-writeRaster(
-  bc_all_birds_hotspot,
-  "data/processed_bc_biod_rasters/bc_all_birds_hotspots_raster.tif",
-  overwrite = TRUE)
-
-#the other way of doing it 
-
-# library(terra)
-# 
-# # folder with rasters
-# folder_rasters_combos<-"data/output_bc_crop_named_all"
-# # list all tif files
-# raster_files <- list.files(folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE)
-# # load rasters into a list
-# raster_list <- lapply(raster_files, rast)
-
-#r_stack <- rast(raster_list ) 
-
-# this is teh fucntion 
-# process_stack <- function(r_stack) {
-#   
-#   # 1) Reclassify all layers: <=0 → 0, >0 → 1
-#   rcl <- matrix(c(-Inf, 0, 0,
-#                   0, Inf, 1),
-#                 ncol = 3, byrow = TRUE)
-#   
-#   r_bin <- classify(r_stack, rcl)
-#   
-#   # 2) Pixel-wise sum across layers
-#   sum_raster <- app(r_bin, sum, na.rm = TRUE)
-#   
-#   # 3) Mask: TRUE if at least one layer has a 0
-#   zero_mask <- app(r_bin, function(x) any(x == 0))
-#   
-#   # 4) Replace NA in the sum only where zero_mask is TRUE
-#   sum_raster[is.na(sum_raster) & zero_mask] <- 0
-#   
-#   return(sum_raster)
-# }
-# 
-# 
-# # Apply the function 
-# result_raster2 <- process_stack(raster_stack )
-# 
-# plot(result_raster2)
-
-#######For sara Sepecies 
+####### Set the directory to download teh data for SARA species 
 Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/0_ebird_data_layers/SARA")
-bc_SARA_species<-unique(bc_list_SARA_join$common_name)
 
+# ================================
+# 2) THE DATA 
+# ================================
+bc_SARA_list <- read.csv("data/list/bird_species_at_risk_list_02_18_2026.csv", stringsAsFactors = FALSE) %>%
+  as_tibble() %>% 
+  rename(status_sara=status) %>% 
+  rename(schedule_sara=schedule)
+
+bc_list_SARA <-bc_list %>% 
+  full_join(bc_SARA_list, by = "common_name")   # some species are not joining properly (e.g., owls)
+
+bc_list_SARA_filtered<-bc_list %>% 
+  full_join(bc_SARA_list, by = "common_name") %>%   # some species are not joining properly (e.g., owls)
+  filter(!is.na(Family)) %>% 
+  filter(!is.na(schedule_sara)) 
+
+#write.csv(bc_list_SARA_filtered, "output_tables/list_Bc_species_SARA_status_2023.csv", row.names = FALSE)
+
+#View(bc_list_SARA_join)
+
+bc_list_SARA_join_ebird <-list_species_bc_ebird  %>% 
+  left_join(bc_SARA_list, by = "common_name") %>%   # some species are not joining properly (e.g., owls)
+  filter(!is.na(schedule_sara)) 
+
+#View(bc_list_SARA_join_ebird)
+
+bc_SARA_species<-unique(bc_list_SARA_filtered$common_name)
+
+bc_SARA_species_residents<-bc_list_SARA_join_ebird %>% 
+  filter(is_resident==TRUE) %>% 
+  distinct(common_name) %>% 
+  pull(common_name)
+
+# ================================
+# 3) DOWNLOAD RASTER
+# ================================
+# This runs for those specie staht are non resident 
 for (species in bc_SARA_species) {
   cat("/n>>> Downloading:", species, "/n")
   # Download full-year abundance data at 3 km
@@ -707,6 +556,19 @@ for (species in bc_SARA_species) {
   }, silent = TRUE)
 }
 
+# There are two species in the SARA that are resident ad therefore I need to download "abundance_seasonal_max_3km" # species are Marbled Murrelet and Western Screech owl
+
+# this complemenst for those species taht are resident 
+for (species in bc_SARA_species_residents) {
+  cat("/n>>> Downloading only residenst are new:", species, "/n")
+  # Download seasonal abundance data for resident species at 3 km
+  try({ ebirdst_download_status( species,pattern = "abundance_seasonal_max_3km",download_occurrence = FALSE,dry_run =FALSE,force = FALSE  )
+  }, silent = TRUE)
+}
+
+# ================================
+# 4) READ BC BOUNDARIES and transform to ebird projection
+# ================================
 
 # Read shapefile
 bc_boundary <- sf::st_read("data/layers/BC_boundary_layer.shp") # vector file 
@@ -715,30 +577,28 @@ crs(bc_boundary)
 ext(bc_boundary)      # spatial extent
 #res(bc_boundary)      # resolution
 
-# Ensure clip geometry matches each raster's CRS, so here we reprojet the Bc layer into the projection of teh rasters, alternatively i can reproject al the ebird  rasters to bc alberts, I decided that projecting one will save me some code 
 
-bc_boundary_proj <- bc_boundary %>% 
-  st_transform("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs") %>%  # transform coordinate system to match the raster data from ebird
+raster_ebird_projection <- crs( load_raster(species = "Cinnamon Teal", product = "abundance",period= "full-year",metric  = "max"))
+# The original boundary is projected as NAD 1983 BC Environment Albers
+# It is very important to check teh projection for ebird for every year because it changes between 2022 (UNIQUE PROJECTION) and 2023( WGC84)projectios
+
+# # do it directly to teh projection of interest 
+bc_boundary_proj <- bc_boundary %>%
+  st_transform(8857) %>%  # Equal Earth projection (projected CRS, meters)
   vect()
 
-# For the rest of the species, this probably will include some empty rasters 
-#output_dir <- "data/output_ebird_bc" # old folder 
-output_dir<-"data/output_bc_crop/sara"
-
-# For the rest of species # need to clean this code # It is important to run the resident species first because when we run this for all species it could override the residents as an empty raster otherwise 
+# ================================
+# 4) CROP THE SARA RASTERS TO BC 
+# ================================
+# the output directory
+output_dir_sara<-"data/output_bc_crop/sara"
 
 for (species in bc_SARA_species) {
   try({
-    # Load raster (full-year abundance at 3 km)
-    abundance <- load_raster(species, product = "abundance", period = "full-year", metric = "max")
-    
-    # Crop/mask to BC boundary
-    abundance_masked <- mask(crop(abundance, bc_boundary_proj), bc_boundary_proj)
-    
-    # Filename
-    sp_name <- gsub(" ", "_", species)
-    out_file_full <- file.path(output_dir, paste0(sp_name, "_abundance_full-year_max_3km_BC.tif"))
-    
+    abundance <- load_raster(species, product = "abundance", period = "full-year", metric = "max")# Load raster (full-year abundance at 3 km)
+    abundance_masked <- terra::mask(crop(abundance, bc_boundary_proj), bc_boundary_proj)# Crop/mask to BC boundary
+    sp_name <- gsub(" ", "_", species) # Filename
+    out_file_full <- file.path(output_dir_sara, paste0(sp_name, "_abundance_full-year_max_3km_BC.tif"))
     # Save (skip if exists OR set overwrite = TRUE)
     if (!file.exists(out_file_full)) {
       writeRaster(abundance_masked, out_file_full, overwrite = FALSE) # this makes sure we are not overwriting some species
@@ -748,45 +608,64 @@ for (species in bc_SARA_species) {
   }, silent = TRUE)
 }
 
-
-
-
-
-# We can also just stack teh rasters
-folder_rasters_combos<-"data/output_bc_crop/sara"
-files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE)
-raster_stack <- terra::rast(files)
-
-# once tehy are in a list we can process teh stack using teh function 
-
-process_stack <- function(r_stack) {
-  
-  # 1) Reclassify all layers: <=0 → 0, >0 → 1
-  rcl <- matrix(c(-Inf, 0, 0,
-                  0, Inf, 1),
-                ncol = 3, byrow = TRUE)
-  
-  r_bin <- classify(r_stack, rcl)
-  
-  # 2) Pixel-wise sum across layers
-  sum_raster <- app(r_bin, sum, na.rm = TRUE)
-  
-  # 3) Mask: TRUE if at least one layer has a 0
-  zero_mask <- app(r_bin, function(x) any(x == 0))
-  
-  # 4) Replace NA in the sum only where zero_mask is TRUE
-  sum_raster[is.na(sum_raster) & zero_mask] <- 0
-  
-  return(sum_raster)
+# Run again for resident species, baceuse of the difefrence in file names 
+for (species in bc_SARA_species_residents) {
+  try({
+    abundance_residents <- load_raster(species, product = "abundance", period = "seasonal", metric = "max")
+    abundance_masked_residents <- mask(crop(abundance_residents, bc_boundary_proj), bc_boundary_proj)    # Crop/mask
+    sp_name <- gsub(" ", "_", species)# Filenames
+    out_file_season <- file.path(output_dir_sara, paste0(sp_name, "_abundance_resident_seasonal_max_3km_BC.tif"))
+    # Save (important skip if exists OR set overwrite = TRUE)
+    if (!file.exists(out_file_season)) {
+      writeRaster(abundance_masked_residents, out_file_season, overwrite = FALSE)
+    }
+    
+    cat("✅ Saved (or already existed):", basename(out_file_season), "\n")
+  }, silent = TRUE)
 }
 
-SARA_raster <- process_stack(raster_stack)
+# ================================
+# 4) RENAME THE FILES  
+# ================================
+# ================================
+# 4a) RENAME THE RASTERS for the non resident
+# ================================
+# 6a) RENAME THE RASTERS for non-resident species and resident species. I am well aware taht there are two residents species but I just wnat to simplify this
 
-plot(result_raster )
+rasters_folder<-"data/output_bc_crop/sara"
+raster_files <- list.files(rasters_folder, pattern = "\\.tif$", full.names = TRUE)
 
-writeRaster(
-  SARA_raster,
-  "data/processed_bc_biod_rasters/bc_sara_hotspots_raster.tif",
-  overwrite = TRUE)
+# the function to rename them including a name inside the raster
+rasters_renamed <- lapply(raster_files, function(f) {
+  r <- rast(f)
+  # Extract the filename (without extension)
+  fname <- tools::file_path_sans_ext(basename(f))
+  # Split and get first two words
+  parts <- strsplit(fname, "_")[[1]]
+  newname <- paste(parts[1:min(2, length(parts))], collapse = "_")
+  # Rename the layer inside the raster
+  names(r) <- newname
+  return(r)
+})
 
-#######end sara species 
+####
+# 6a)Export the raster renamed into a new directory
+####
+outdir <- "data/output_bc_crop_named_sara"
+
+if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE) # make sure directory exist 
+
+# Loop through your list of rasters
+for (r in rasters_renamed) {
+  # Use the layer name as filename
+  nm <- names(r)
+  outfile <- file.path(outdir, paste0(nm, "abundance_full-year_or_seasonal_max_3km_BC.tif"))
+  writeRaster(r, outfile, overwrite = TRUE)
+  cat("✅ Saved:", outfile, "\n")
+}
+
+
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+##_##_###_##_CODE ENDS HERE 
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+

@@ -62,9 +62,6 @@ library(terra) # For working with raster and vector data in spatial analysis
 library(ebirdst) # ebird data 
 library(ggplot2) # for plots
 
-
-
-
 # ================================
 # 1) DATA
 # ================================
@@ -93,69 +90,70 @@ res(bc_boundary)      # resolution
 # ================================
 # 1) STACKING
 # ================================
-# some stacking classical approach 
-##############
+# ================================
+#1a) STack Bc birds biodiversity
+# ================================
 
-r_stack<-rast(files)  # Create a stack of teh files without doing any math just a Stack Raster object
-r_stack[[1]] #  check taht layers are named by species already 
+# the folder with the rasters 
+folder_rasters_combos<-"data/output_bc_crop_named_all"
 
+#the function
 
-process_stack <- function(r_stack) {
-  
-  # 1) Reclassify all layers: <=0 → 0, >0 → 1
-  rcl <- matrix(c(-Inf, 0, 0,
-                  0, Inf, 1),
-                ncol = 3, byrow = TRUE)
-  
-  r_bin <- classify(r_stack, rcl)
-  
-  # 2) Pixel-wise sum across layers
-  sum_raster <- app(r_bin, sum, na.rm = TRUE)
-  
-  # 3) Mask: TRUE if at least one layer has a 0
-  zero_mask <- app(r_bin, function(x) any(x == 0))
-  
-  # 4) Replace NA in the sum only where zero_mask is TRUE
-  sum_raster[is.na(sum_raster) & zero_mask] <- 0
-  
+load_reclass_and_sum_raster <- function(folder_rasters_combos) {
+    files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE) # List all .tif raster files in the provided folder (full paths)
+  # Safety check: if no files are found, return NULL to avoid crashing terra::rast()
+  if (length(files) == 0) {
+    warning("No raster files found in the folder")
+    return(NULL)
+  }
+  raster_stack <- terra::rast(files) # Load all raster files into a SpatRaster (multi-layer stack)
+  reclassified <- raster_stack > 0  # Reclassify raster values: # TRUE (1) where values > 0, FALSE (0) where values <= 0 # This creates a binary presence/absence raster for each layer
+  sum_raster <- terra::app(reclassified, sum, na.rm = TRUE)# Sum across all raster layers:# Each pixel now represents the number of layers where value > 0
+  zero_mask <- terra::app(reclassified == 0, sum, na.rm = TRUE) > 0# Create a mask identifying pixels where at least one layer had a 0
+  sum_raster[is.na(sum_raster) & zero_mask] <- 0  # # Handle NA values in the summed raster: Replace NA with 0 ONLY where we know at least one layer had a valid 0
+  # Return the final summed raster
   return(sum_raster)
 }
 
-result_raster <- process_stack(r_stack)
+bc_all_birds_hotspot<-load_reclass_and_sum_raster(folder_rasters_combos)
 
-plot(result_raster )
+plot(bc_all_birds_hotspot)
+
+# ANOTHER WAY OF DOING IT 
+
+# # the folder with the rasters 
+# folder_rasters_combos<-"data/output_bc_crop_named_all"
+# # create a list of teh rasters   
+# files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE) # make sure numbers make sense
+# # If all rasters have the same extent, resolution, and projection, you can stack them:
+# raster_stack <- terra::rast(files)
+# 
+# # this is teh fucntion 
+# process_stack <- function(r_stack) {
+#   rcl <- matrix(c(-Inf, 0, 0,0, Inf, 1),ncol = 3, byrow = TRUE)# 1) Reclassify all layers: <=0 → 0, >0 → 1
+#   r_bin <- classify(r_stack, rcl)
+#   sum_raster <- app(r_bin, sum, na.rm = TRUE)# 2) Pixel-wise sum across layers
+#   zero_mask <- app(r_bin, function(x) any(x == 0))# 3) Mask: TRUE if at least one layer has a 0
+#   sum_raster[is.na(sum_raster) & zero_mask] <- 0# 4) Replace NA in the sum only where zero_mask is TRUE
+#   return(sum_raster)
+# }
+# 
+# # Apply the function 
+# bc_all_birds_hotspot <- process_stack(raster_stack )
+# 
+# plot(bc_all_birds_hotspot )
 
 # ================================
-# 1) RE-PROJECT THE STACK TO MATCH BC BOUNDARY # NEED TO WORK ON THIS I THINK I AM MAKING  AMISTAKE HERE 
+# 1b) Write raster
 # ================================
-# 1) Project raster to match BC boundary CRS 
-##############
-#result_proj <- project(result_raster, crs(bc_boundary_proj))
-result_proj <- project(result_raster, crs(bc_boundary)) # PROJECTED TO WHAT WE NEED FOR THE PROJECT  The original boundary is projected as NAD 1983 BC Environment Albers
 
-plot(result_proj)
-# ## 2) Crop/mask to BC boundary  ----
-result_bc <- mask(crop(result_proj, bc_boundary), bc_boundary) # to crop any extra outside the boundary
-# 
-# ## 3) Get sensible legend limits ----
- max_val <- global(result_proj, "max", na.rm = TRUE)[1, 1]
-# 
-# ## 4) Plot map ----
-# par(mar = c(0, 0, 0, 0))
-# 
-# Base: BC boundary
-plot(bc_boundary, col = "grey90", border = "grey40",
-     axes = FALSE, main = "")
-
-# Add raster on top
-plot(result_proj,
-     col = viridis(100),
-     legend = FALSE,
-     add = TRUE)
-# 
+writeRaster(
+  bc_all_birds_hotspot,
+  "data/processed_bc_biod_rasters/bc_all_birds_hotspots_raster_2023.tif",
+  overwrite = TRUE)
 
 # ================================
-# 2) PLOTTING
+# 1c) PLOTTING
 # ================================
 # some stacking classical approach 
 ##############
@@ -202,253 +200,109 @@ scale_fill_viridis(
   labs(title = "Number of resident species across BC")
 
 
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+##_##_###_##_CODE ENDS HERE 
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
 
 
 
+# Some extra code
+# 8) Try some stacking
 # ================================
-# 3) EXTRACT THE NAMES OF SPECIES PER PIXEL 
-# ================================
-##################### Function to extract the names of species per pixel 
+# some stacking classical approach 
+##############
 
+# we need a list of rasters 
+# for example the rasters_renamed_residents
+class(rasters_renamed_residents)
+r_stack <- rast(rasters_renamed_residents)              # check taht layers are named by species already
+# raster_files_residents[[1]]
 
-names(r_stack)                            # sanity check
+# We can also just stack teh rasters
+#folder_rasters_combos<-"data/output_bc_crop_named_residents"
+#files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE)
+#raster_stack <- terra::rast(files)
 
-# 2) Per-pixel SUM (e.g., abundance sum)
-sum_r <- sum(r_stack, na.rm = TRUE)
+# The function
 
-# 3) Per-pixel COUNT of non-zero layers (e.g., richness)
-count_r <- app(r_stack, fun = function(x) sum(x > 0, na.rm = TRUE))
-
-#Globally (anywhere in the map): which layers have any non-zero pixel?
-
-# Per-layer max; >0 means the layer contributes somewhere
-mx <- global(r_stack, max, na.rm = TRUE)
-layers_with_any_nz <- rownames(mx)[mx$max > 0]
-layers_with_any_nz
-
-
-#Per pixel: you can’t store a string list inside a raster cell, but you can query it at locations. Two handy helpers:
-
-# A) For points: return contributing layer names for each point
-contributors_at_points <- function(stack, pts_sf_or_df) {
-  vals <- terra::extract(stack, pts_sf_or_df)         # first column is ID
-  apply(vals[, -1, drop = FALSE], 1, function(row) {
-    nm <- names(stack)[which(row > 0 & !is.na(row))]
-    if (length(nm) == 0) NA_character_ else paste(nm, collapse = ";")
-  })
+process_stack <- function(r_stack) {
+  
+  # 1) Reclassify all layers: <=0 → 0, >0 → 1
+  rcl <- matrix(c(-Inf, 0, 0,
+                  0, Inf, 1),
+                ncol = 3, byrow = TRUE)
+  
+  r_bin <- classify(r_stack, rcl)
+  
+  # 2) Pixel-wise sum across layers
+  sum_raster <- app(r_bin, sum, na.rm = TRUE)
+  
+  # 3) Mask: TRUE if at least one layer has a 0
+  zero_mask <- app(r_bin, function(x) any(x == 0))
+  
+  # 4) Replace NA in the sum only where zero_mask is TRUE
+  sum_raster[is.na(sum_raster) & zero_mask] <- 0
+  
+  return(sum_raster)
 }
 
-outdir <- "data/derived"
-if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
+result_raster <- process_stack(r_stack)
 
-contributors_at_points()
+plot(result_raster )
 
-## a shorther version of it 
-
-contributors_at_points <- function(stack, pts_sf) {
-  
-  # 1. Extract raster values at point locations
-  vals <- terra::extract(stack, pts_sf_or_df)
-  
-  # 2. Drop the ID column
-  vals_data <- vals[, -1, drop = FALSE]
-  
-  # 3. Initialize output vector
-  contributors <- character(nrow(vals_data))
-  
-  # 4. Loop over points (rows)
-  for (i in seq_len(nrow(vals_data))) {
-    
-    # Values from all raster layers at point i
-    row_vals <- as.numeric(vals_data[i, ])
-    
-    # Names of layers with values > 0 and not NA
-    contributing <- names(stack)[
-      row_vals > 0 & !is.na(row_vals)
-    ]
-    
-    if (length(contributing) == 0) {
-      contributors[i] <- NA_character_
-    } else {
-      contributors[i] <- paste(contributing, collapse = ";")
-    }
-  }
-  
-  contributors
-}
-
-# the data 
-stack <- rast(rasters_renamed_residents)   
-
-pts_sf <- st_as_sf(
-  data.frame(
-    lon = -123.12,
-    lat = 49.28
-  ),
-  coords = c("lon", "lat"),
-  crs = 4326
-)
-
-#here is a new version in tidyverse 
-
-
-contributors_at_points2 <- function(stack, pts_sf_or_df) {
-  
-  # 1. Extract raster values at point locations
-  vals <- terra::extract(stack, pts_sf_or_df)
-  
-  # 2. Drop the ID column
-  vals_data <- vals[, -1, drop = FALSE]
-  
-  # 3. Initialize output vector
-  contributors <- character(nrow(vals_data))
-  
-  # 4. Loop over points (rows)
-  for (i in seq_len(nrow(vals_data))) {
-    
-    # Values from all raster layers at point i
-    row_vals <- as.numeric(vals_data[i, ])
-    
-    # Names of layers with values > 0 and not NA
-    contributing <- names(stack)[
-      row_vals > 0 & !is.na(row_vals)
-    ]
-    
-    if (length(contributing) == 0) {
-      contributors[i] <- NA_character_
-    } else {
-      contributors[i] <- paste(contributing, collapse = ";")
-    }
-  }
-  
-  contributors
-}
-
-# lets try some data 
-
-stack <- rast(rasters_renamed_residents)              # check taht layers are named by species already
-
-
-pts_sf <- st_as_sf(
-  data.frame(
-    lon = -123.12,
-    lat = 49.28
-  ),
-  coords = c("lon", "lat"),
-  crs = 4326
-)
-#Before extraction, always check:
-
-terra::crs(stack)
-st_crs(pts_sf)
-pts_sf <- st_transform(pts_sf, terra::crs(stack))
-
-
-contributors_at_points2(stack, pts_sf)
-
-
-# ####
-#   writeRaster(sum_r,   file.path(outdir, "sum_abundance.tif"),   overwrite = TRUE, gdal = "COMPRESS=LZW")
-#   writeRaster(count_r, file.path(outdir, "count_nonzero.tif"),   overwrite = TRUE, gdal = "COMPRESS=LZW")
-
-# Using a polygone instead of a point 
-contributors_at_polygon <- function(stack, polygon_sf) {
-  
-  # 1. Extract raster values for all cells inside the polygon
-  vals <- terra::extract(stack, polygon_sf)
-  
-  # 2. Drop ID column
-  vals_data <- vals[, -1, drop = FALSE]
-  
-  # 3. Initialize output
-  contributing_layers <- character(0)
-  
-  # 4. Loop over raster layers (columns)
-  for (j in seq_len(ncol(vals_data))) {
-    
-    layer_vals <- vals_data[[j]]
-    
-    # Does this layer have ANY positive, non-NA value?
-    if (any(layer_vals > 0, na.rm = TRUE)) {
-      contributing_layers <- c(
-        contributing_layers,
-        names(stack)[j]
-      )
-    }
-  }
-  
-  # 5. Return result
-  if (length(contributing_layers) == 0) {
-    NA_character_
-  } else {
-    paste(contributing_layers, collapse = ";")
-  }
-}
-
-
-species_in_bc_test<-contributors_at_polygon(stack, polygon)
-
-polygon <- bc_boundary %>% 
-  st_transform("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs") %>%  # transform coordinate system to match the raster data from ebird
-  vect()
-
-as.list(species_in_bc_test)
-
-names(stack)
-
-plot(stack$Spotted_Owl)
-
-contributors_at_polygon <- function(stack, polygon_sf) {
-  
-  # 1. Extract raster values for all cells inside the polygon
-  vals <- terra::extract(stack, polygon_sf)
-  
-  # 2. Drop ID column
-  vals_data <- vals[, -1, drop = FALSE]
-  
-  # 3. Initialize output
-  contributing_layers <- character(0)
-  
-  # 4. Loop over raster layers (columns)
-  for (j in seq_len(ncol(vals_data))) {
-    
-    layer_vals <- vals_data[[j]]
-    
-    # Does this layer have ANY positive, non-NA value?
-    if (any(layer_vals > 0, na.rm = TRUE)) {
-      contributing_layers <- c(
-        contributing_layers,
-        names(stack)[j]
-      )
-    }
-  }
-  
-  # 5. Return vector (not collapsed string)
-  if (length(contributing_layers) == 0) {
-    NA_character_
-  } else {
-    contributing_layers
-  }
-}
-
-
-# To run this example I wanted to use all Bc POLYGONE BECAUSE I Have the whole list for BC, and compare them.
+###### here to create a nice plot 
+# ## 1) Project raster to match BC boundary CRS ----
+# # (safer than hard-coding a projection string)
+# result_proj <- project(result_raster, crs(bc_boundary_proj))
 # 
+# ## 2) Crop/mask to BC boundary (optional but usually nicer) ----
+# result_bc <- mask(crop(result_proj, bc_boundary_proj), bc_boundary_proj)
+# 
+# ## 3) Get sensible legend limits ----
+# max_val <- global(result_bc, "max", na.rm = TRUE)[1, 1]
+# 
+# ## 4) Plot map ----
+# par(mar = c(0, 0, 0, 0))
+# 
+# # Base: BC boundary
+# plot(bc_boundary_proj, col = "grey90", border = "grey40",
+#      axes = FALSE, main = "")
+# 
+# # Add raster on top
+# plot(result_bc,
+#      col = viridis(100),
+#      legend = FALSE,
+#      add = TRUE)
+# 
+# # Optional: add title separately (for nicer spacing)
+# title("Number of resident species across BC", line = -2, cex.main = 1.2)
+# 
+# # 5) Legend with fields::image.plot ----
+# fields::image.plot(
+#   zlim       = c(0, max_val),
+#   legend.only = TRUE,
+#   col        = viridis(100),
+#   breaks     = seq(0, max_val, length.out = 101),
+#   smallplot  = c(0.15, 0.85, 0.12, 0.15),   # horizontal legend
+#   horizontal = TRUE,
+#   axis.args  = list(
+#     at     = c(0, round(max_val / 2), max_val),
+#     labels = c("Low", "Medium", "High"),
+#     fg         = "black",
+#     col.axis   = "black",
+#     cex.axis   = 0.8,
+#     lwd.ticks  = 0.5,
+#     padj       = -1.5
+#   ),
+#   legend.args = list(
+#     text = "Number of resident species",
+#     side = 3,
+#     col  = "black",
+#     cex  = 1,
+#     line = 0
+#   )
+# )
 
-polygon <- bc_boundary %>% 
-  st_transform("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs") %>%  # transform coordinate system to match the raster data from ebird
-  vect()
-
-# here is the stack
-stack <- rast(rasters_renamed_residents)   
-
-# here I am running teh function 
-
-species_in_bc_test<-contributors_at_polygon(stack, polygon)
-
-# Importnat it extacts the names of 34 species while the total number of raters that are for Bc in the stack is 35 and it shoudl extract them all.
-# The one taht is missing is spotted owl 
-# interestingly when I look at the ratser for this species only has zeros for BC, I confirm this by going into ebird and fro 2022 tehre are not registers. they exist fro other years
 
 
 

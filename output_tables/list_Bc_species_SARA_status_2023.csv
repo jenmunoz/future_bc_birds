@@ -1,0 +1,40 @@
+Order,Family,common_name,status,include,why_exclude,notes,recommendation_Yousif,why,conclusion_include,status_sara,schedule_sara,scientific_name,population_notes,note
+ANSERIFORMES, Anatidae,Barrow's Goldeneye,,,,,yes,,include,Special Concern,schedule1,Bucephala islandica,Eastern population,this is under the species at risk act 
+ANSERIFORMES, Anatidae,Harlequin Duck,,,,,yes,,include,Special Concern,schedule1,Histrionicus histrionicus,Eastern population,this is under the species at risk act 
+APODIFORMES, Apodidae,Black Swift,Vulnerable,,,,yes,,include,Endangered,schedule1,Cypseloides niger,,this is under the species at risk act 
+CAPRIMULGIFORMES, Caprimulgidae,Common Nighthawk,,,,,yes,,include,Special Concern,schedule1,Chordeiles minor,,this is under the species at risk act 
+CHARADRIIFORMES, Alcidae,Ancient Murrelet,,,,,yes,,include,Special Concern,schedule1,Synthliboramphus antiquus,,this is under the species at risk act 
+CHARADRIIFORMES, Scolopacidae,Buff-breasted Sandpiper,Vulnerable,,,,yes,,include,Special Concern,schedule1,Tryngites subruficollis,,this is under the species at risk act 
+CHARADRIIFORMES, Alcidae,Cassin's Auklet,Near-threatened,,,,yes,,include,Special Concern,schedule1,Ptychoramphus aleuticus,,this is under the species at risk act 
+CHARADRIIFORMES, Scolopacidae,Long-billed Curlew,,,,,yes,,include,Special Concern,schedule1,Numenius americanus,,this is under the species at risk act 
+CHARADRIIFORMES, Alcidae,Marbled Murrelet,Endangered,,,,yes,,include,Threatened,schedule1,Brachyramphus marmoratus,,this is under the species at risk act 
+CHARADRIIFORMES, Scolopacidae,Red Knot,Near-threatened,,,,yes,,include,Endangered,schedule1,Calidris canutus rufa,"Tierra del Fuego / Patagonia wintering population, Southeastern USA / Gulf of Mexico / Caribbean wintering population",this is under the species at risk act 
+CHARADRIIFORMES, Scolopacidae,Red Knot,Near-threatened,,,,yes,,include,Threatened,schedule1,Calidris canutus roselaari,roselaari subspecies,this is under the species at risk act 
+CHARADRIIFORMES, Scolopacidae,Red-necked Phalarope,,,,,yes,,include,Special Concern,schedule1,Phalaropus lobatus,,this is under the species at risk act 
+COLUMBIFORMES, Columbidae,Band-tailed Pigeon,,,,,yes,,include,Special Concern,schedule1,Patagioenas fasciata,,this is under the species at risk act 
+GRUIFORMES, Rallidae,Yellow Rail,,,,,yes,,include,Special Concern,schedule1,Coturnicops noveboracensis,,this is under the species at risk act 
+PASSERIFORMES, Hirundinidae,Bank Swallow,,,,,yes,,include,Threatened,schedule1,Riparia riparia,,this is under the species at risk act 
+PASSERIFORMES, Hirundinidae,Barn Swallow,,,,,yes,,include,Threatened,schedule1,Hirundo rustica,,this is under the species at risk act 
+PASSERIFORMES, Icteridae,Bobolink,,,,,yes,,include,Threatened,schedule1,Dolichonyx oryzivorus,,this is under the species at risk act 
+PASSERIFORMES, Parulidae,Canada Warbler,,,,,yes,,include,Threatened,schedule1,Cardellina canadensis,,this is under the species at risk act 
+PASSERIFORMES, Fringillidae,Evening Grosbeak,Vulnerable,,,,yes,,include,Special Concern,schedule1,Coccothraustes vespertinus,,this is under the species at risk act 
+PASSERIFORMES, Passerellidae,Grasshopper Sparrow,,,,,yes,,include,Special Concern,schedule1,Ammodramus savannarum pratensis,pratensis subspecies,this is under the species at risk act 
+PASSERIFORMES, Passerellidae,Harris's Sparrow,Near-threatened,,,,yes,,include,Special Concern,schedule1,Zonotrichia querula,,this is under the species at risk act 
+PASSERIFORMES, Tyrannidae,Olive-sided Flycatcher,Near-threatened,,,,yes,,include,Special Concern,schedule1,Contopus cooperi,,this is under the species at risk act 
+PASSERIFORMES, Icteridae,Rusty Blackbird,Vulnerable,,,,yes,,include,Special Concern,schedule1,Euphagus carolinus,,this is under the species at risk act 
+PASSERIFORMES, Mimidae,Sage Thrasher,,,,,yes,,include,Endangered,schedule1,Oreoscoptes montanus,,this is under the species at risk act 
+PASSERIFORMES, Motacillidae,Sprague's Pipit,Vulnerable,,,,yes,,include,Threatened,schedule1,Anthus spragueii,,this is under the species at risk act 
+PASSERIFORMES, Icteriidae,Yellow-breasted Chat,,,,,yes,,include,Endangered,schedule1,Icteria virens ,"Southern Mountain population, Icteria virens virens, Icteria virens auricollis,",this is under the species at risk act 
+PICIFORMES, Picidae,Lewis's Woodpecker,,,,,yes,,include,Threatened,schedule1,Melanerpes lewis,,this is under the species at risk act 
+PICIFORMES, Picidae,Williamson's Sapsucker,,,,,yes,,include,Endangered,schedule1,Sphyrapicus thyroideus,,this is under the species at risk act 
+PODICIPEDIFORMES, Podicipedidae,Horned Grebe,Vulnerable,,,,yes,,include,Endangered,schedule1,Podiceps auritus,Magdalen Islands population,this is under the species at risk act 
+PODICIPEDIFORMES, Podicipedidae,Horned Grebe,Vulnerable,,,,yes,,include,Special Concern,schedule1,Podiceps auritus,Western population,this is under the species at risk act 
+PODICIPEDIFORMES, Podicipedidae,Western Grebe,,,,,yes,,include,Special Concern,schedule1,Aechmophorus occidentalis,,this is under the species at risk act 
+PROCELLARIIFORMES, Diomedeidae,Black-footed Albatross,Near-threatened,,,,yes,,include,Special Concern,schedule1,Phoebastria nigripes,,this is under the species at risk act 
+PROCELLARIIFORMES, Procellariidae,Pink-footed Shearwater,Vulnerable,,,,yes,,include,Endangered,schedule1,Ardenna creatopus,,this is under the species at risk act 
+PROCELLARIIFORMES, Diomedeidae,Short-tailed Albatross,Vulnerable,,,,yes,,include,Threatened,schedule1,Phoebastria albatrus,,this is under the species at risk act 
+STRIGIFORMES, Strigidae,Flammulated Owl,,,,,yes,,include,Special Concern,schedule1,Otus flammeolus,,this is under the species at risk act 
+STRIGIFORMES, Strigidae,Northern Saw-whet Owl,,,,,yes,,include,Threatened,schedule1,Aegolius acadicus brooksi,brooksi subspecies,this is under the species at risk act 
+STRIGIFORMES, Strigidae,Short-eared Owl,,,,,yes,,include,Special Concern,schedule1,Asio flammeus,,this is under the species at risk act 
+STRIGIFORMES, Strigidae,Short-eared Owl,,,,,yes,,include,Special Concern_cosewic,schedule7,Asio flammeus,,this is under the cosewic for consideration for species at risk act 
+STRIGIFORMES, Strigidae,Western Screech-Owl,,,,,yes,,include,Threatened,schedule1,Megascops kennicottii kennicottii,"kennicottii subspecies, macfarlanei subspecies",this is under the species at risk act 

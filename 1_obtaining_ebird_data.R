@@ -97,7 +97,6 @@ getwd() # shoudl be [1] "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordina
 ebirdst_data_dir()
 
 # If you want to override the default for THIS SESSION ONLY: this will be the folder where data is downloaded 
-# (Pick a fast local SSD or a managed project folder.)
 #Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Documents/BirdsCanada/1_jv_science_coordinator_role/1_projects/9_future_for_bc_birds/e_bird_data_bc")
 Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/0_ebird_data_layers")
 ebirdst::ebirdst_data_dir()
@@ -105,25 +104,14 @@ ebirdst::ebirdst_data_dir()
 # ================================
 # 2) SPECIES LIST FOR BC
 # ================================
-
 # This list is filtered to exclude rare/accidental, introduced, uncertain, and extirpated statuses.
 # Assumes the CSV has at least columns: "status" and "common_name".
 
 bc_list_full <- read.csv("data/list/bc_birds_checklist_avibase_reviewed.csv", stringsAsFactors = FALSE) %>%
   as_tibble()
-
-
 #View( bc_list_full)
 dim(bc_list_full)
-# I want to see how many species are rare/accidental # This are potentiall to be deleted froom analyses  ( ask David if he agrees)
-# bc_list_full_accidental <- read.csv("data/list/bc_birds_checklist_avibase.csv", stringsAsFactors = FALSE) %>%
-#   filter(status %in% c("Rare/Accidental"))
-#View(bc_list_full)
 
-# Safety checks in case the CSV schema changes
-#stopifnot(all(c("status", "common_name") %in% names(bc_list)))
-# bc_list <- bc_list_full%>%
-#   filter(!status %in% c("Rare/Accidental", "Introduced", "Uncertain", "Extirpated"))
 
 # here we filter species that for any reason are not a contributor to Bc diversity
 bc_list <- bc_list_full%>%
@@ -140,12 +128,9 @@ unique(bc_list$common_name)
 # Vector of species names we’ll potentially loop over later # this is the whole list of BC bird species 
 bc_species <- unique(bc_list$common_name)
 
-
 # ================================
 # 2) SPECIES AT RISK LIST FOR BC
 # ================================
-
-
 bc_SARA_list <- read.csv("data/list/bird_species_at_risk_list_02_18_2026.csv", stringsAsFactors = FALSE) %>%
   as_tibble()
 
@@ -172,18 +157,20 @@ View(ebirdst_runs) # the overall list of ebird species
 # list of Bc birds
 full_list<-bc_list %>% dplyr::select(sci_name, common_name,Family,Order,why)
 
+dim(full_list)
 match_species_bc_ebird <- bc_list %>%
   left_join(ebirdst_runs, by = "common_name")
-#View(match_species_bc_ebird )
+View(match_species_bc_ebird )
+dim(match_species_bc_ebird)
 
 # for which species we dont have it
+
 missing_species_bc_ebird <- match_species_bc_ebird %>%
   filter(is.na(scientific_name)) %>% 
   dplyr::select(common_name, sci_name, is_resident) %>% 
   mutate(ebird_data="no")
 dim(missing_species_bc_ebird)
 #write.csv(missing_species_bc_ebird, "output_tables/Bc_species_without_ebird_data.csv", row.names = FALSE)
-
 
 View(missing_species_bc_ebird )
 # print(missing_species_bc_ebird$sci_name) # list pf secies for which we dont have the data 
@@ -196,7 +183,7 @@ list_species_bc_ebird <- bc_list %>%
   mutate(ebird_data="yes")
 dim(list_species_bc_ebird )
 
-# Create a list that documents which species where included and whcih ones where not, plus which ones have ebird data 
+# Create a list that documents which species where included and which ones where not, plus which ones have ebird data 
 annotated_list <- full_list %>% 
   left_join(list_species_bc_ebird, by = "common_name") %>% 
   left_join(missing_species_bc_ebird, by = "common_name") %>% 
@@ -207,10 +194,10 @@ annotated_list <- full_list %>%
   dplyr::select(Order, Family, sci_name, common_name, ebird_data,is_resident,why )
   
 dim(annotated_list)
-#write.csv(annotated_list, "output_tables/annotated_list_Bc_species_status.csv", row.names = FALSE)
+#write.csv(annotated_list, "output_tables/annotated_list_Bc_species_status_2023.csv", row.names = FALSE)
 
 # There  are some species that I need to correct manually 
-# House wren corrected manually
+# House wren corrected manually in teh Bc list to match the ebird list 
 # Correct manually Western/Eastern Cattle Egret
 # Checked manually those species with the ebirdst_runs
 
@@ -231,9 +218,7 @@ print(bc_list$common_name) # the whole list of bc species
 
 # DRY RUN: list what would be downloaded for Cinnamon Teal
 ebirdst_download_status( "cinnamon teal",pattern = "full-year_max_3km",download_occurrence = TRUE,dry_run = TRUE)
-
-ebirdst_download_status( "Tufted Puffin",pattern = "full-year_max_3km",download_occurrence = TRUE,dry_run = TRUE)
-
+ebirdst_download_status( "American Dipper",download_occurrence = TRUE,dry_run = TRUE)
 View(ebirdst_runs)
 
 # ACTUAL DOWNLOAD
@@ -261,7 +246,6 @@ ebirdst_download_status( "American Dipper ",pattern = "_3km", download_occurrenc
 # Below we load occurrence "max" for full-year.
 load_raster()
 raster_cite_fullyear <- load_raster(species = "Cinnamon Teal", product = "abundance",period= "full-year",metric  = "max")
-
 raster_housefinch_fullyear <- load_raster(species = "house finch", product = "abundance", period="seasonal", metric="max")  
 
 # If you’re unsure about parameters or available products/periods/metrics:
@@ -270,16 +254,16 @@ raster_housefinch_fullyear <- load_raster(species = "house finch", product = "ab
 # ================================
 # 6) RUN A LOOP TO DOWNLOAD DATA FOR BC SPECIES 
 # ================================
-# Although we know there is not data for all BC species — only 311 out of 356 — 
+# Although we know there is not data for all BC species — only 351
 # we could still run it for the entire list so that when the package adds new data,
 # the same code can automatically handle those species.  Just make sure to check which species were skipped and 
 # Important make a note for the species that have not data on ebird but are included in teh Bc list
 
 # Important note
 # In the list of BC we have a total of 567 species including introduced species, rare and vagrant species
-# Once we exclude those species that are not "conservation contributors" then we have 338 species 
+# Once we exclude those species that are not "conservation contributors" then we have 351 species 
 # for example  those excluded include introduce, extinct, extirpated, and vagrants species ( this is after recommendation from Andrew, Bc Bird Atlas, Yousif and looking at the number of registers)
-# Of those 338 species, we have ebird data for 310 (see section# 4 See FOR HOW MANY BC SPECIES WE HAVE EBIRD DATA), of those  species 275 are flagged as non-residentare and downloaded, and 35 are flagged as resident. 
+# Of those 354 we have data for 351 (see section# 4 See FOR HOW MANY BC SPECIES WE HAVE EBIRD DATA), of those  species 275 are flagged as non-residentare and downloaded, and 35 are flagged as resident. 
 # 
 
 # Option 1: Use all species from the BC list
@@ -293,9 +277,6 @@ raster_housefinch_fullyear <- load_raster(species = "house finch", product = "ab
 
 bc_species <- unique(list_species_bc_ebird$common_name)
 
-
-
-
 # Identify resident species (these have a different data product name and that is why I am downloading them independently) 
 # interestingly some species that are resident are not in the list of resident = yes such as crows  or bald eagle ## why???
 # we take the list of bc species and filter residents 
@@ -307,7 +288,7 @@ bc_species_resident_code<-unique(bc_species_resident_df$species_code)
 
 
 # LOOP over the list of all bc species and download data, you will notice that it skipped some species, that do not have "full-year_max" data ( those are  resident species )
-# this only downloads data for 276 species 
+# this only downloads data for 316 species 
 
 for (species in bc_species) {
   cat("/n>>> Downloading:", species, "/n")

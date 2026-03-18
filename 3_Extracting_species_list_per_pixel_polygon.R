@@ -7,6 +7,8 @@
 #   - Compute richness and abundance summaries
 #   - Identify contributing species at points and polygons
 # ============================================================
+Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/0_ebird_data_layers")
+ebirdst::ebirdst_data_dir()
 
 
 # ============================================================
@@ -40,7 +42,8 @@ r_stack[[1]]
 # ============================================================
 
 # 2a) Per-pixel SUM (e.g., total abundance)
-sum_r <- sum(r_stack, na.rm = TRUE)
+#sum_r <- sum(r_stack, na.rm = TRUE)
+sum_r <- terra::app(r_stack, sum, na.rm = TRUE)
 
 # 2b) Per-pixel COUNT of non-zero layers (species richness)
 count_r <- app(
@@ -58,6 +61,7 @@ mx <- global(r_stack, max, na.rm = TRUE)
 layers_with_any_nz <- rownames(mx)[mx$max > 0]
 layers_with_any_nz
 
+# It is telling me that there is data for 335, so some of the rasters must be empty for BC 
 
 # Optional: write outputs
 # writeRaster(sum_r,   file.path(outdir, "sum_abundance.tif"),
@@ -170,30 +174,44 @@ contributors_at_polygon <- function(stack, polygon_sf) {
 # 7) TEST: POLYGON EXTRACTION (BC BOUNDARY)
 # ============================================================
 
-rasters_stacked <- r_stack
+# Folder containing BC species rasters
+folder_rasters_combos <- "data/output_bc_crop_named_all"
 
+# List all .tif files
+files <- list.files( path = folder_rasters_combos,pattern = "\\.tif$", full.names = TRUE)
+
+# Create SpatRaster stack (no calculations yet)
+r_stack <- rast(files)
+
+# Sanity check: layer names should correspond to species names
+names(r_stack)
+
+# transform to the projection of interest in this case WGC 84
 polygon <- bc_boundary %>%
-  st_transform(
-    "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs"
-  ) %>%
+  st_transform(8857) %>%  # Equal Earth projection (projected CRS, meters)
   vect()
 
 # Check CRS
-terra::crs(rasters_stacked)
+terra::crs(r_stack)
 st_crs(polygon)
 
-# Reproject polygon to raster CRS
-polygon <- st_transform(polygon, terra::crs(rasters_stacked))
+# Reproject polygon to raster CRS, IF NEEDED
+#polygon <- st_transform(polygon, terra::crs(r_stacK))
 
 # Run function
 species_in_bc_test <- contributors_at_polygon(
-  rasters_stacked,
-  polygon
-)
+  r_stack,
+  polygon)
 
 species_list <- as.list(species_in_bc_test)
 print(species_list)
 
+# Check for empty rasters
+# this are the species that have empty layers from eBird, they are in the lsit of Bc species but most of tehm are aquatic species  or 
+## are rare registrs in Bc 
+layer_sums <- global(r_stack, fun = "sum", na.rm = TRUE)
+empty_layers <- layer_sums[,1] == 0
+names(r_stack)[empty_layers]
 
 # ============================================================
 # NOTE ON RESULTS

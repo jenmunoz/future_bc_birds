@@ -15,24 +15,24 @@
 ## Last updated: August 2025
 ###_###_####_###_###_###_###_###_###_###_###_###_###_###_###_###_###_
 
-# ================================
-# 0) SETUP
-# ================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 0) SETUP ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
-# Install required Libraries 
-# To access ebird data 
-
+# ---- Install required libraries ----
 # Data Manipulation
 install.packages("tidyverse")
 install.packages("janitor")
-install.packages("glue") # String Manipulation
-install.packages("fs") # File Operations
-install.packages("png") # Image Handling
+install.packages("glue")   # String Manipulation
+install.packages("fs")     # File Operations
+install.packages("png")    # Image Handling
+
 # Data Visualization
 install.packages("viridis")
 install.packages("scales")
 install.packages("fields")
-install.packages("readr") # Data Input/Output
+install.packages("readr")  # Data Input/Output
+
 # Geospatial Data
 install.packages("rnaturalearth")
 install.packages("sf")
@@ -41,130 +41,122 @@ install.packages("ebirdst")
 install.packages("rmapshaper")
 install.packages("terra")
 
+# ---- Load libraries ----
+library(dplyr)        # Data manipulation
+library(janitor)      # Data cleaning
+library(glue)         # String interpolation
+library(fs)           # File operations
+library(png)          # Read/write PNG images
+library(viridis)      # Color scales
+library(scales)       # Graphical scales
+library(fields)       # Spatial tools
+library(readr)        # Read CSV, rectangular data
+library(rnaturalearth)# Map data
+library(sf)           # Simple features for geospatial data
+library(raster)       # Raster data analysis
+library(ebirdst)      # Access eBird Status and Trends data
+library(rmapshaper)   # Simplify shapes
+library(terra)        # Raster/vector spatial analysis
+library(ggplot2)      # Plots
 
-# Load necessary libraries
-library(dplyr) # Essential for data manipulation with functions to filter, arrange, summarize, etc.
-library(janitor) # Functions for simple data cleaning
-library(glue) # Useful for data-driven string interpolations
-library(fs) # A cross-platform interface for file system operations
-library(png) # Allows reading and writing PNG images
-library(viridis) # Provides color scales for improving data visualization accessibility
-library(scales) # Graphical scales for mapping data to aesthetics in visualizations
-library(fields) # Tools for spatial data
-library(readr) # Fast and friendly way to read rectangular data like CSV files
-library(rnaturalearth) # Provides map data for creating high-quality maps
-library(sf) # Used for handling simple features to work with geographic data
-library(raster) # For raster data manipulation and analysis
-library(ebirdst) # Tools for accessing and analyzing eBird Status and Trends data
-library(rmapshaper) # Simplifies shapes for data visualizations
-library(terra) # For working with raster and vector data in spatial analysis
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 1) DATA PREPARATION ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
-library(ebirdst) # ebird data 
-library(ggplot2) # for plots
-
-# ================================
-# 1) DATA
-# ================================
-# Get the working directory
+# Get working directory
 getwd()
 
-folder_rasters_combos<-"data/output_bc_crop_named_residents"
-files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE)
+# Define raster folder
+folder_rasters_combos <- "data/output_bc_crop_named_residents"
 
-# The original boundary is projected as NAD 1983 BC Environment Albers
-# Read shapefile
-bc_boundary <- sf::st_read("data/layers/BC_boundary_layer.shp") # vector file 
+# List raster files
+files <- list.files(
+  path = folder_rasters_combos,
+  pattern = "\\.tif$",
+  full.names = TRUE
+)
 
+# Read BC boundary shapefile
+bc_boundary <- sf::st_read("data/layers/BC_boundary_layer.shp") 
+
+# Check properties
 crs(bc_boundary)
-ext(bc_boundary)      # spatial extent
-res(bc_boundary)      # resolution
+ext(bc_boundary)      
+res(bc_boundary)      
 
-# # Ensure clip geometry matches each raster's CRS, so here we reprojet the Bc layer into the projection of teh rasters, alternatively i can reproject al the ebird  rasters to bc alberts, I decided that projecting one will save me some code 
+# Optional: Reproject BC boundary to match raster CRS
 # bc_boundary_proj <- bc_boundary %>% 
-#   st_transform("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs") %>%  # transform coordinate system to match the raster data from ebird
-#   vect() #vect() # transforms to terra object spat vector 
-# # check the projection
+#   st_transform("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +R=6371007.181 +units=m +no_defs") %>%  
+#   vect() 
 # crs(bc_boundary_proj)
 
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 2) STACKING WORKFLOW ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
-# ================================
-# 1) STACKING
-# ================================
-# ================================
-#1a) STack Bc birds biodiversity
-# ================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 2a) STACK BC BIRDS (ALL SPECIES) ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
-# the folder with the rasters 
-folder_rasters_combos<-"data/output_bc_crop_named_all"
+# Folder with rasters
+folder_rasters_combos <- "data/output_bc_crop_named_all"
 
-#the function
-
+# ---- Function: Load, reclassify, and sum rasters ----
 load_reclass_and_sum_raster <- function(folder_rasters_combos) {
-    files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE) # List all .tif raster files in the provided folder (full paths)
-  # Safety check: if no files are found, return NULL to avoid crashing terra::rast()
+  
+  files <- list.files(
+    path = folder_rasters_combos,
+    pattern = "\\.tif$",
+    full.names = TRUE
+  ) # List all .tif raster files
+  
+  # Safety check
   if (length(files) == 0) {
     warning("No raster files found in the folder")
     return(NULL)
   }
-  raster_stack <- terra::rast(files) # Load all raster files into a SpatRaster (multi-layer stack)
-  reclassified <- raster_stack > 0  # Reclassify raster values: # TRUE (1) where values > 0, FALSE (0) where values <= 0 # This creates a binary presence/absence raster for each layer
-  sum_raster <- terra::app(reclassified, sum, na.rm = TRUE)# Sum across all raster layers:# Each pixel now represents the number of layers where value > 0
-  zero_mask <- terra::app(reclassified == 0, sum, na.rm = TRUE) > 0# Create a mask identifying pixels where at least one layer had a 0
-  sum_raster[is.na(sum_raster) & zero_mask] <- 0  # # Handle NA values in the summed raster: Replace NA with 0 ONLY where we know at least one layer had a valid 0
-  # Return the final summed raster
+  
+  raster_stack <- terra::rast(files) # Load all raster files into a SpatRaster stack
+  
+  # Reclassify raster values
+  # TRUE (1) where >0, FALSE (0) where <=0
+  reclassified <- raster_stack > 0  
+  
+  # Sum across layers
+  # Each pixel represents the number of layers with value >0
+  sum_raster <- terra::app(reclassified, sum, na.rm = TRUE)
+  
+  # Mask: identify pixels where at least one layer had a 0
+  zero_mask <- terra::app(reclassified == 0, sum, na.rm = TRUE) > 0
+  
+  # Replace NA with 0 where we know at least one layer had valid 0
+  sum_raster[is.na(sum_raster) & zero_mask] <- 0  
+  
   return(sum_raster)
 }
 
-bc_all_birds_hotspot<-load_reclass_and_sum_raster(folder_rasters_combos)
+# Apply function
+bc_all_birds_hotspot <- load_reclass_and_sum_raster(folder_rasters_combos)
 
+# Plot hotspot
 plot(bc_all_birds_hotspot)
 
-# ANOTHER WAY OF DOING IT 
-
-# # the folder with the rasters 
-# folder_rasters_combos<-"data/output_bc_crop_named_all"
-# # create a list of teh rasters   
-# files <- list.files(path = folder_rasters_combos, pattern = "\\.tif$", full.names = TRUE) # make sure numbers make sense
-# # If all rasters have the same extent, resolution, and projection, you can stack them:
-# raster_stack <- terra::rast(files)
-# 
-# # this is teh fucntion 
-# process_stack <- function(r_stack) {
-#   rcl <- matrix(c(-Inf, 0, 0,0, Inf, 1),ncol = 3, byrow = TRUE)# 1) Reclassify all layers: <=0 → 0, >0 → 1
-#   r_bin <- classify(r_stack, rcl)
-#   sum_raster <- app(r_bin, sum, na.rm = TRUE)# 2) Pixel-wise sum across layers
-#   zero_mask <- app(r_bin, function(x) any(x == 0))# 3) Mask: TRUE if at least one layer has a 0
-#   sum_raster[is.na(sum_raster) & zero_mask] <- 0# 4) Replace NA in the sum only where zero_mask is TRUE
-#   return(sum_raster)
-# }
-# 
-# # Apply the function 
-# bc_all_birds_hotspot <- process_stack(raster_stack )
-# 
-# plot(bc_all_birds_hotspot )
-
-# ================================
-# 1b) Write raster
-# ================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 2b) WRITE OUTPUT RASTER ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 writeRaster(
   bc_all_birds_hotspot,
-  "data/processed_bc_biod_rasters/bc_all_birds_hotspots_raster_2023.tif",
-  overwrite = TRUE)
+  "data/processed_rasters/bc_all_birds_hotspots_raster_2023.tif",
+  overwrite = TRUE
+)
 
-# ================================
-# 1c) PLOTTING
-# ================================
-# some stacking classical approach 
-##############
-library(terra)
-library(sf)
-library(ggplot2)
-library(viridis)
-
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 2c) PLOTTING ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # Convert raster to dataframe
-result_bc <- mask(crop(result_proj, bc_boundary), bc_boundary) # i dont think i need this step 
+result_bc <- mask(crop(result_proj, bc_boundary), bc_boundary) 
 
 r_df <- as.data.frame(result_bc, xy = TRUE, na.rm = TRUE)
 colnames(r_df)[3] <- "value"
@@ -173,18 +165,20 @@ colnames(r_df)[3] <- "value"
 bc_sf <- st_as_sf(bc_boundary)
 max_val <- global(result_proj, "max", na.rm = TRUE)[1, 1]
 
-
+# Plot map
 ggplot() + 
-geom_raster(data = r_df, aes(x = x, y = y, fill = value)) +# Raster layer
-geom_sf(data = bc_sf,  # BC boundary outline
-          fill = NA,
-          color = "grey40",
-          linewidth = 0.4) +
-scale_fill_viridis(
+  geom_raster(data = r_df, aes(x = x, y = y, fill = value)) + 
+  geom_sf(
+    data = bc_sf,
+    fill = NA,
+    color = "grey40",
+    linewidth = 0.4
+  ) +
+  scale_fill_viridis(
     name = "Number of resident species",
     limits = c(0, max_val),
-    option = "D") +
-  # Clean map theme
+    option = "D"
+  ) +
   coord_sf(expand = FALSE) +
   theme_minimal() +
   theme(
@@ -196,13 +190,66 @@ scale_fill_viridis(
     legend.title = element_text(size = 11),
     legend.text = element_text(size = 9)
   ) +
-  
   labs(title = "Number of resident species across BC")
 
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 3) SARA SPECIES ANALYSIS ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
-# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
-##_##_###_##_CODE ENDS HERE 
-# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+# Note:
+# Resident species in eBird do not have full-year_max layer
+# They have abundance_seasonal_max_3km.t
+# Non-resident species have abundance_seasonal_max layer
+# Goal: compare both types
+
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 3a) STACK BC SARA SPECIES ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+folder_rasters_combos_sara <- "data/output_bc_crop_named_sara"
+
+# Function (same logic reused)
+load_reclass_and_sum_raster <- function(folder_rasters_combos_sara) {
+  files <- list.files(
+    path = folder_rasters_combos_sara,
+    pattern = "\\.tif$",
+    full.names = TRUE
+  )
+  if (length(files) == 0) {
+    warning("No raster files found in the folder")
+    return(NULL)
+  }
+  raster_stack <- terra::rast(files)
+  reclassified <- raster_stack > 0   # Reclassify: TRUE where >0, FALSE where <=0
+  sum_raster <- terra::app(reclassified, sum, na.rm = TRUE)# Sum across layers
+  zero_mask <- terra::app(reclassified == 0, sum, na.rm = TRUE) > 0 # Mask: identify pixels with at least one 0
+  sum_raster[is.na(sum_raster) & zero_mask] <- 0  # Replace NA with 0 where appropriate
+  return(sum_raster)
+}
+
+# Apply function
+bc_sara_hotspot <- load_reclass_and_sum_raster(folder_rasters_combos_sara)
+
+# Plot hotspot
+plot(bc_sara_hotspot)
+
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 3b) WRITE OUTPUT RASTER ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
+writeRaster(
+  bc_sara_hotspot,
+  "data/processed_rasters/bc_sara_birds_hotspots_raster_2023.tif",
+  overwrite = TRUE
+)
+
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- END OF SCRIPT ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
+
+
+
+
 
 
 

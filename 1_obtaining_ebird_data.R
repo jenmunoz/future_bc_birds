@@ -1,5 +1,6 @@
 
-###_###_####_###_###_###_###_###_###_###_###_###_###_###_###_###_###_
+###_###_####_###_###_###_###_###_###_###_###_###_###_###_###_###_###_###_###_####_###_###_###_###_###_###_###_###_###_###_###_###_###_###_
+
 ## BC fund collaboration: future for Bc birds
 ## ##
 ## Objective:stacking selected e-bird rasters into single rasters for all Bc species
@@ -8,7 +9,8 @@
 ## 0) Download e-bird 3*3 km rasters fro all BC birds
 ## 1) It crops to Bc boundary 
 ## 2) It projects bc boundary to match ebird
-## 3) In organizes data in folder for future analyses
+## 3) In organizes data in folderS for future analyses
+## 4) Names the rastrs iwth species names
 
 ## The subsequent scripts do the other steps 
 ##i) Read tiff files into Rasters 
@@ -17,7 +19,8 @@
 ##
 ## Updated and annotated by Jenny Munoz
 ## Last updated: August 2025
-###_###_####_###_###_###_###_###_###_###_###_###_###_###_###_###_###_
+###_###_####_###_###_###_###_###_###_###_###_###_###_###_###_###_###_###_###_####_###_###_###_###_###_###_###_###_###_###_###_###_###_###_
+
 
 # ================================
 # 0) SETUP
@@ -350,9 +353,7 @@ crs(bc_boundary_proj)
 
 # try(..., silent = TRUE) means if one species fails (e.g., not available), the loop continues.
 # Note that here we work with residents and the non-resident species separated because the names of the files are different 
-
 output_dir_residents<-"data/output_bc_crop/residents"
-
 # Important you need to do resident species first, and they specify that you dont want them to overwrite it 
 #abundance_residents <- load_raster("Black Oystercatcher", product = "abundance", period = "seasonal", metric = "max")
 
@@ -382,7 +383,6 @@ warnings()
 # For the rest of the species, this probably will include some empty rasters 
 #output_dir <- "data/output_ebird_bc" # old folder 
 output_dir<-"data/output_bc_crop/non-residents"
-
 
 for (species in bc_species) {
   try({
@@ -497,6 +497,7 @@ for (r in rasters_renamed_residents) {
   cat("✅ Saved:", outfile, "\n")
 }
 
+# I needed to correct the name of teh Ruff RASTER MANUALLY BECAUSE IT WAS NAMED Ruffabundance
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
 # --------------- FOR SARA SPECIES ----------------
@@ -545,7 +546,7 @@ bc_SARA_species_residents<-bc_list_SARA_join_ebird %>%
   pull(common_name)
 
 # ================================
-# 3) DOWNLOAD RASTER
+# 3) DOWNLOAD RASTERS
 # ================================
 # This runs for those specie staht are non resident 
 for (species in bc_SARA_species) {

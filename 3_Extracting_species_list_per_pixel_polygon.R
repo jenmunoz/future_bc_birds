@@ -11,9 +11,9 @@ Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_co
 ebirdst::ebirdst_data_dir()
 
 
-# ============================================================
-# 0) SETUP
-# ============================================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+#---0) SETUP----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # Check working directory
 getwd()
@@ -25,9 +25,9 @@ folder_rasters_combos <- "data/output_bc_crop_named_all"
 files <- list.files( path = folder_rasters_combos,pattern = "\\.tif$", full.names = TRUE)
 
 
-# ============================================================
-# 1) STACK RASTERS
-# ============================================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# 1) STACK RASTERS------
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # Create SpatRaster stack (no calculations yet)
 r_stack <- rast(files)
@@ -37,9 +37,9 @@ names(r_stack)
 r_stack[[1]]
 
 
-# ============================================================
-# 2) PER-PIXEL METRICS
-# ============================================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ----2) PER-PIXEL METRICS------
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # 2a) Per-pixel SUM (e.g., total abundance)
 #sum_r <- sum(r_stack, na.rm = TRUE)
@@ -50,9 +50,9 @@ count_r <- app(
   r_stack,
   fun = function(x) sum(x > 0, na.rm = TRUE))
 
-# ============================================================
-# 3) GLOBAL CHECK: WHICH SPECIES CONTRIBUTE ANYWHERE?
-# ============================================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# 3) GLOBAL CHECK: WHICH SPECIES CONTRIBUTE ANYWHERE?---------
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # Per-layer maximum value
 mx <- global(r_stack, max, na.rm = TRUE)
@@ -70,9 +70,9 @@ layers_with_any_nz
 #             overwrite = TRUE, gdal = "COMPRESS=LZW")
 
 
-# ============================================================
-# 4) FUNCTION: SPECIES CONTRIBUTING AT POINT(S)
-# ============================================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# 4) FUNCTION: SPECIES CONTRIBUTING AT POINT(S)-----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 contributors_at_points <- function(stack, pts_sf_or_df) {
   
@@ -104,9 +104,9 @@ contributors_at_points <- function(stack, pts_sf_or_df) {
 }
 
 
-# ============================================================
-# 5) TEST: POINT EXTRACTION
-# ============================================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# 5) TEST: POINT EXTRACTION-------------
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 rasters_stacked <- r_stack  # ensure correct stack
 
@@ -132,47 +132,39 @@ contributors_at_points(rasters_stacked, point)
 
 
 
-# ============================================================
-# 6) FUNCTION: SPECIES CONTRIBUTING WITHIN A POLYGON
-# ============================================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# 6) FUNCTION: SPECIES CONTRIBUTING WITHIN A POLYGON---------
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
+
 
 contributors_at_polygon <- function(stack, polygon_sf) {
-  
-  # Extract raster values inside polygon
   vals <- terra::extract(stack, polygon_sf)
-  
-  # Remove ID column
   vals_data <- vals[, -1, drop = FALSE]
   
-  # Initialize output vector
-  contributing_layers <- character(0)
+  contributing <- character(0)
+  non_contributing <- character(0)
   
-  # Loop over layers (columns)
-  for (j in seq_len(ncol(vals_data))) {
+  for (layer in seq_len(ncol(vals_data))) {
+    layer_vals <- vals_data[[layer]]
     
-    layer_vals <- vals_data[[j]]
-    
-    # Check if ANY positive value exists
     if (any(layer_vals > 0, na.rm = TRUE)) {
-      contributing_layers <- c(
-        contributing_layers,
-        names(stack)[j]
-      )
+      contributing <- c(contributing, names(stack)[layer])
+    } else {
+      non_contributing <- c(non_contributing, names(stack)[layer])
     }
   }
   
-  # Return vector of species names
-  if (length(contributing_layers) == 0) {
-    NA_character_
-  } else {
-    contributing_layers
-  }
+  list(
+    contributing = contributing,
+    non_contributing_cause_zero_values = non_contributing
+  )
 }
 
 
-# ============================================================
-# 7) TEST: POLYGON EXTRACTION (BC BOUNDARY)
-# ============================================================
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# 7) TEST: POLYGON EXTRACTION (BC BOUNDARY)--------------------------
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # Folder containing BC species rasters
 folder_rasters_combos <- "data/output_bc_crop_named_all"
@@ -208,24 +200,141 @@ print(species_list)
 
 # Check for empty rasters
 # this are the species that have empty layers from eBird, they are in the lsit of Bc species but most of tehm are aquatic species  or 
-## are rare registrs in Bc 
+## are rare registers in Bc 
 layer_sums <- global(r_stack, fun = "sum", na.rm = TRUE)
+unique(layer_sums$sum)
 empty_layers <- layer_sums[,1] == 0
 names(r_stack)[empty_layers]
-
 # ============================================================
 # NOTE ON RESULTS
 # ============================================================
-# The function extracts 34 species while the stack contains 35.
-# The missing species is "Spotted Owl".
+# The function extracts 333 species while the stack contains 350.
+# the empty rasters are 15 species 
+# The missing species are listed 
 #
 # Inspection of its raster shows only zero values for BC.
-# eBird 2022 records confirm no observations in BC for that year.
+# eBird 2023 records confirm no observations in BC for that year.
 #
 # Therefore, the function is behaving correctly.
 # ============================================================
 
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# 7a) TEST: POLYGON EXTRACTION (Amos Creek)-------Rekha request -------------------
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# Questions for Rehka, how big is Amos creek 11.3 ha =0.11 kM2
+# 3km* 3km is 900 hec
 
+# Lets try another stuary taht is this size, I am wondering it it has sometihing to do with it being smaller tan teh pi
+
+# Folder containing BC species rasters
+folder_rasters_combos <- "data/output_bc_crop_named_all"
+# List all .tif files
+files <- list.files( path = folder_rasters_combos,pattern = "\\.tif$", full.names = TRUE)
+# Create SpatRaster stack (no calculations yet)
+r_stack <- rast(files)
+
+# Sanity check: layer names should correspond to species names
+names(r_stack)
+
+# Read BC boundary shapefile
+boundary <- sf::st_read("data/layers/amos_creek/Amos.Creek.Shapefile.shp") 
+
+# Check properties
+crs(boundary)
+
+# transform to the projection of interest in this case WGC 84
+polygon <- boundary %>%
+  st_transform(8857) %>%  # Equal Earth projection (projected CRS, meters)
+  vect()
+
+# Check CRS
+terra::crs(r_stack)
+st_crs(polygon)
+
+# Reproject polygon to raster CRS, IF NEEDED
+#polygon <- st_transform(polygon, terra::crs(r_stacK))
+
+# Run function
+species_in_bc_test <- contributors_at_polygon(
+  r_stack,
+  polygon)
+
+# Cchek teh list of species that ocurr in Amos Creek 
+species_list <- as.list(species_in_bc_test)
+print(species_list)
+
+
+
+################### Rekha request 
+# lets look at the numbers that are in teh layer for Amos Creek rom a raster from the dashboard
+# they give me an Na fro the Amos Creek 
+raster_pbhjv<-rast("C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/PacificBirds_all-bird-groups_all-species-priority_annual_richness_annual.tif")
+crs(raster_pbhjv)
+
+boundary <- sf::st_read("data/layers/amos_creek/Amos.Creek.Shapefile.shp") 
+boundary_proj <- boundary %>%
+  st_transform(crs(raster_pbhjv)) # Equal Earth projection (projected CRS, meters)
+ 
+abundance_masked <- terra::mask(crop(raster_pbhjv, boundary_proj ), boundary_proj)# Crop/mask to BC boundary
+# test with loons 
+raster_pbhjv<-rast("C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/pacloo_abundance_full-year_max_3km_2023.tif")
+crs(raster_pbhjv)
+
+boundary <- sf::st_read("data/layers/amos_creek/Amos.Creek.Shapefile.shp") 
+boundary_proj <- boundary %>%
+  st_transform(crs(raster_pbhjv)) # Equal Earth projection (projected CRS, meters)
+
+abundance_masked <- terra::mask(crop(raster_pbhjv, boundary_proj ), boundary_proj)# Crop/mask to BC boundary
+
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# Now looking at individual rasters that I used for the dashboard from 2023
+
+# test with loons 
+raster_pbhjv<-rast("C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/PacificBirds_Pacific-Loon_mean_seasonal_abundance_2023_breeding.tif")
+crs(raster_pbhjv)
+
+boundary <- sf::st_read("data/layers/amos_creek/Amos.Creek.Shapefile.shp") 
+boundary_proj <- boundary %>%
+  st_transform(crs(raster_pbhjv)) # Equal Earth projection (projected CRS, meters)
+
+abundance_masked <- terra::mask(crop(raster_pbhjv, boundary_proj ), boundary_proj)# Crop/mask to BC boundary # it shows Na! 
+
+plot(raster_pbhjv)
+plot(abundance_masked)
+
+# test with loons 
+raster_pbhjv<-rast("C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/PacificBirds_Pacific-Loon_mean_seasonal_abundance_2023_nonbreeding.tif")
+crs(raster_pbhjv)
+
+boundary <- sf::st_read("data/layers/amos_creek/Amos.Creek.Shapefile.shp") 
+boundary_proj <- boundary %>%
+  st_transform(crs(raster_pbhjv)) # Equal Earth projection (projected CRS, meters)
+
+abundance_masked <- terra::mask(crop(raster_pbhjv, boundary_proj ), boundary_proj)# Crop/mask to BC boundary # it shows Na! 
+
+########### looking at individual rasters for specific species
+
+# this is if I download a raster for that species with max annual abundance from 2023
+
+raster_pbhjv<-rast("C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/pacloo_abundance_full-year_max_3km_2023.tif")
+crs(raster_pbhjv)
+
+boundary <- sf::st_read("data/layers/amos_creek/Amos.Creek.Shapefile.shp") 
+boundary_proj <- boundary %>%
+  st_transform(crs(raster_pbhjv)) # Equal Earth projection (projected CRS, meters)
+
+abundance_masked <- terra::mask(crop(raster_pbhjv, boundary_proj ), boundary_proj)# Crop/mask to BC boundary
+
+plot(abundance_masked), it actually has a value on it 
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# End of script
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+macrorefugia<-rast("C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/layers_refugia/2080s_macrorefugia.tif")
+conservation_priorities<-rast("C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/layers_refugia/Conservation_priorities_2080s.tif")
+
+plot(conservation_priorities)
+
+Scenarios for each taxonomic group (equal weightings for all species) (Core-area Zonation Function)
 
 ########### The messy code 
 

@@ -195,7 +195,7 @@ ggplot() +
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 # ---- 3) SARA SPECIES ANALYSIS ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
-
+# species-at-risk listed under Schedule 1 of the federal Species at Risk Act
 # Note:
 # Resident species in eBird do not have full-year_max layer
 # They have abundance_seasonal_max_3km.t

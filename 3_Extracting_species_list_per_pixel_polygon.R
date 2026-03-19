@@ -7,13 +7,55 @@
 #   - Compute richness and abundance summaries
 #   - Identify contributing species at points and polygons
 # ============================================================
-Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/0_ebird_data_layers")
-ebirdst::ebirdst_data_dir()
 
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
+# ---- Install required libraries ----
+# Data Manipulation
+install.packages("tidyverse")
+install.packages("janitor")
+install.packages("glue")   # String Manipulation
+install.packages("fs")     # File Operations
+install.packages("png")    # Image Handling
+
+# Data Visualization
+install.packages("viridis")
+install.packages("scales")
+install.packages("fields")
+install.packages("readr")  # Data Input/Output
+
+# Geospatial Data
+install.packages("rnaturalearth")
+install.packages("sf")
+install.packages("raster")
+install.packages("ebirdst")
+install.packages("rmapshaper")
+install.packages("terra")
+
+# ---- Load libraries ----
+library(dplyr)        # Data manipulation
+library(janitor)      # Data cleaning
+library(glue)         # String interpolation
+library(fs)           # File operations
+library(png)          # Read/write PNG images
+library(viridis)      # Color scales
+library(scales)       # Graphical scales
+library(fields)       # Spatial tools
+library(readr)        # Read CSV, rectangular data
+library(rnaturalearth)# Map data
+library(sf)           # Simple features for geospatial data
+library(raster)       # Raster data analysis
+library(ebirdst)      # Access eBird Status and Trends data
+library(rmapshaper)   # Simplify shapes
+library(terra)        # Raster/vector spatial analysis
+library(ggplot2)      # Plots
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 #---0) SETUP----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
+Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/0_ebird_data_layers")
+ebirdst::ebirdst_data_dir()
 
 # Check working directory
 getwd()

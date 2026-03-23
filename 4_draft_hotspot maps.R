@@ -1,8 +1,5 @@
-
 library(raster)
 library ( terra)
-
-
 
 
 folder_path <- "data/output_ebird_bc_all_species"

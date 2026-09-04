@@ -1,0 +1,14 @@
+------------------
+Order Details
+-----------------
+Order ID: 2477524
+Date: 20250725
+
+----------------------
+Feature Types
+-----------------------
+ - Strategic Land and Resource Plans - Current in subdirectory RMP_STRGC_LAND_RSRCE_PLAN_SVW
+
+----------------------------
+Packaged Products
+----------------------------

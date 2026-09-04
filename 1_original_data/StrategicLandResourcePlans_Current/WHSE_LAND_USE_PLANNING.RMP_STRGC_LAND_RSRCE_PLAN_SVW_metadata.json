@@ -1,0 +1,173 @@
+[
+	{
+		"title" : "Strategic Land and Resource Plans - Current",
+		"name" : "strategic-land-and-resource-plans-current",
+		"bcdc_data_resource_url" : "https://catalogue.data.gov.bc.ca/dataset/4b142d4c-83d6-4ecc-b66c-66601ae65992",
+		"description" : "Contains the boundaries of current British Columbia Strategic Land and Resource Plans (SLRPs). The plans can be accessed [here](https://www2.gov.bc.ca/gov/content/industry/crown-land-water/land-use-planning/regions).\r\n\r\nSLRPs provide direction for Crown land use through the establishment of broad land use goals, planning zone designations, objectives and strategies.  This layer represents an integrated regional consensus-based process, which requires public and First Nations participation to produce a SLRP for review and approval by government.  SLRPs establish direction on land and resource use and specify broad resource management objectives and strategies. Historical plan types include SRMPs, LRMPs, RLUPs and coastal plans. \r\n\r\nCurrent, non-retired SLRP boundaries are included in this layer, where RETIREMENT_DATE is blank. RETIREMENT_DATE is the field that stores the retirement date. If RETIREMENT_DATE is empty, the feature is the current shape. All SLRP shapes (past/retired and present/current) are in the layer [Strategic Land and Resource Plans - All](https://catalogue.data.gov.bc.ca/dataset/298d1034-c1be-4fd1-ad4b-d00ad5ab4b88).\r\n\r\n** Please review the Data Quality section below.** ",
+		"purpose" : "The layer is to provide direction for Crown land use through the establishment of broad land use goals, planning zone designations, objectives and strategies.",
+		"bcdc_type" : "Geographic",
+		"last_modified" : "2025-07-18T10:19:19",
+		"resource_storage_location" : "Bc Geographic Warehouse",
+		"object_name" : "WHSE_LAND_USE_PLANNING.RMP_STRGC_LAND_RSRCE_PLAN_SVW",
+		"object_short_name" : "RMPSLR_SVW",
+		"object_table_comments" : "WHSE_LAND_USE_PLANNING.RMP_STRGC_LAND_RSRCE_PLAN_SVW is a selection of the layer RMP_STRGC_LAND_RSRCE_PLAN_SP, where the RETIREMENT DATE is null. Strategic land and resource plans (SLRPs) provide direction for Crown land use through the establishment of broad land use goals, planning zone designations, objectives and strategies.  Plan types include SRMPs, LRMPs, and RLUPs.",
+		"projection_name" : "epsg3005",
+		"license_title" : "Open Government Licence - British Columbia",
+		"license_url" : "https://www2.gov.bc.ca/gov/content?id=A519A56BC2BF44E4A008B33FCF527F61",
+		"details" : [
+			{
+				"column_comments" : "STRGC LAND RSRCE PLAN ID. A unique, static user maintained identifier used for quality control and quality assurance reporting purposes.",
+				"column_name" : "STRGC_LAND_RSRCE_PLAN_ID",
+				"data_precision" : 5,
+				"data_type" : "NUMBER",
+				"short_name" : "SLRP_ID"
+			},
+			{
+				"column_comments" : "STRGC LAND RSRCE PLAN PROVID The provincial identifier. Unique for any polygon (or collection of polygons for SLRPs managed with distinct attribute values) that does not have a retired date. Not unique for polygon features with multiple retirements. This identifier stays with the polygon feature over time as the feature changes.",
+				"column_name" : "STRGC_LAND_RSRCE_PLAN_PROVID",
+				"data_precision" : 5,
+				"data_type" : "NUMBER",
+				"short_name" : "SLRPPRVID"
+			},
+			{
+				"column_comments" : "STRGC LAND RSRCE PLAN NAME. The official name assigned to the plan",
+				"column_name" : "STRGC_LAND_RSRCE_PLAN_NAME",
+				"data_precision" : 100,
+				"data_type" : "VARCHAR2",
+				"short_name" : "SLRP_NAME"
+			},
+			{
+				"column_comments" : "STRGC LAND RSRCE ABRVN. Official abbreviation on plan name ( e.g. CCLRMP, VILUP)",
+				"column_name" : "STRGC_LAND_RSRCE_ABRVN",
+				"data_precision" : 12,
+				"data_type" : "VARCHAR2",
+				"short_name" : "SLRP_ABRVN"
+			},
+			{
+				"column_comments" : "PLAN TYPE. Name or acronym of plan type e.g. coastal, LRMP, RLUP, or SRMP (Note: All plans are considered SLRPs, but some plans have specific naming convention sub-types based on their content, planning scope and historical timing of plan development.  It is this sub-type (or overarching SLRP type if there is no sub-type) that is captured in this attribute).",
+				"column_name" : "PLAN_TYPE",
+				"data_precision" : 30,
+				"data_type" : "VARCHAR2",
+				"short_name" : "PLAN_TYPE"
+			},
+			{
+				"column_comments" : "PLAN STATUS. Contains an indicator of plan status. E.g. draft, approved or legal.",
+				"column_name" : "PLAN_STATUS",
+				"data_precision" : 20,
+				"data_type" : "VARCHAR2",
+				"short_name" : "PLANSTATUS"
+			},
+			{
+				"column_comments" : "APPROVAL DATE. A non-mandatory date field to indicate the date the SLRP polygon was formally approved by government decision-makers (e.g. Cabinet, Minister of Ag & lands etc.) as official government policy (Note: this approval process does not mean the planning direction has been formally legalized).",
+				"column_name" : "APPROVAL_DATE",
+				"data_precision" : 7,
+				"data_type" : "DATE",
+				"short_name" : "APP_DT"
+			},
+			{
+				"column_comments" : "APPROVAL LAST AMEND DATE. A non-mandatory date field to indicate the date the SLRP polygon was last formally amended by government decision-makers (i.e. formal amendment has occurred but SLRP direction still remains in policy, not legalized).",
+				"column_name" : "APPROVAL_LAST_AMEND_DATE",
+				"data_precision" : 7,
+				"data_type" : "DATE",
+				"short_name" : "APP_AMD_DT"
+			},
+			{
+				"column_comments" : "LEGALIZATION DATE. A non-mandatory date field to indicate the date the SLRP polygon was formally enacted in law e.g. Higher Level Plan boundary.",
+				"column_name" : "LEGALIZATION_DATE",
+				"data_precision" : 7,
+				"data_type" : "DATE",
+				"short_name" : "LEGAL_DT"
+			},
+			{
+				"column_comments" : "LEGALIZATION LAST AMEND DATE A non-mandatory date field to indicate the date the SLRP polygon was last legally amended.",
+				"column_name" : "LEGALIZATION_LAST_AMEND_DATE",
+				"data_precision" : 7,
+				"data_type" : "DATE",
+				"short_name" : "LGL_AMD_DT"
+			},
+			{
+				"column_comments" : "GIS CHANGE DATE: A mandatory date field to indicate the date the SLRP polygon was updated by the GIS Change Person.",
+				"column_name" : "GIS_CHANGE_DATE",
+				"data_precision" : 7,
+				"data_type" : "DATE",
+				"short_name" : "GIS_CH_DT"
+			},
+			{
+				"column_comments" : "GIS CHANGE PERSON: A mandatory text field to indicate the technical GIS person who physically made a change to the SLRP polygon. This GIS task is typically resulting from direction received from the business area \"Initiator of Change\".",
+				"column_name" : "GIS_CHANGE_PERSON",
+				"data_precision" : 20,
+				"data_type" : "VARCHAR2",
+				"short_name" : "GIS_CH_PER"
+			},
+			{
+				"column_comments" : "CHANGE REASON. A text field to indicate the business reason for initiating a change in a SLRP polygon.",
+				"column_name" : "CHANGE_REASON",
+				"data_precision" : 100,
+				"data_type" : "VARCHAR2",
+				"short_name" : "CHG_REASON"
+			},
+			{
+				"column_comments" : "INITIATOR OF CHANGE. Person in the business area who has requested change(s) to be made.",
+				"column_name" : "INITIATOR_OF_CHANGE",
+				"data_precision" : 20,
+				"data_type" : "VARCHAR2",
+				"short_name" : "INITIATOR"
+			},
+			{
+				"column_comments" : "ENABLING DOCUMENT TITLE is the title of the legal order that enabled the strategic land or resource use plan or specific objective to come into legal force, or other document which confirms the plan or objective as policy of government. The document describes the objective and often contains additional management direction for accomplishing the objective which may affect use of natural resources. Example: “Ministerial Order: Land use Objectives for the Cariboo-Chilcotin Land Use Area”",
+				"column_name" : "ENABLING_DOCUMENT_TITLE",
+				"data_precision" : 275,
+				"data_type" : "VARCHAR2",
+				"short_name" : "ENBLNG_DCE"
+			},
+			{
+				"column_comments" : "ENABLING DOCUMENT URL is the link for the document which enabled the legal or policy land or resource objective to come into force. Documents are stored in a variety of file formats and may be large files as many contain maps.",
+				"column_name" : "ENABLING_DOCUMENT_URL",
+				"data_precision" : 254,
+				"data_type" : "VARCHAR2",
+				"short_name" : "ENBLNG_DCL"
+			},
+			{
+				"column_comments" : "FEATURE CODE contains a value based on the Canadian Council of Surveys and Mapping's (CCSM) system for classification of geographic features.",
+				"column_name" : "FEATURE_CODE",
+				"data_precision" : 10,
+				"data_type" : "VARCHAR2",
+				"short_name" : "F_CODE"
+			},
+			{
+				"column_comments" : "FEATURE_AREA_SQM is the system calculated area of a two-dimensional polygon in square meters",
+				"column_name" : "FEATURE_AREA_SQM",
+				"data_precision" : 19,
+				"data_type" : "NUMBER",
+				"short_name" : "AREA_SQM"
+			},
+			{
+				"column_comments" : "FEATURE_LENGTH_M is the system calculated length or perimeter of a geometry in meters",
+				"column_name" : "FEATURE_LENGTH_M",
+				"data_precision" : 19,
+				"data_type" : "NUMBER",
+				"short_name" : "FEAT_LEN"
+			},
+			{
+				"column_comments" : "GEOMETRY is the column used to reference the spatial coordinates defining the feature.",
+				"column_name" : "GEOMETRY",
+				"data_precision" : 64,
+				"data_type" : "SDO_GEOMETRY",
+				"short_name" : "GEOMETRY"
+			},
+			{
+				"column_comments" : "OBJECTID is a column required by spatial layers that interact with ESRI ArcSDE. It is populated with unique values automatically by SDE.",
+				"column_name" : "OBJECTID",
+				"data_precision" : 38,
+				"data_type" : "NUMBER",
+				"short_name" : "OBJECTID"
+			},
+			{
+				"column_comments" : "SE_ANNO_CAD_DATA is a binary column used by spatial tools to store annotation, curve features and CAD data when using the SDO_GEOMETRY storage data type.",
+				"column_name" : "SE_ANNO_CAD_DATA",
+				"data_precision" : 4000,
+				"data_type" : "BLOB"
+			}
+		]
+	}
+]

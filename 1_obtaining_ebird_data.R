@@ -88,7 +88,7 @@ ebirdst::ebirdst_version() # $status_version_year  1] 2023
 # 2) Save the key for this session with set_ebirdst_access_key().
 #    
 
-set_ebirdst_access_key("f6me7thr51ul")  # <- replace for local testing only
+set_ebirdst_access_key("vo32metuklp4")  # <- replace for local testing only
 # Where am I running this from (useful for path debugging)?
 getwd() # shoudl be [1] "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds"
 # ebirdst package version (useful for reproducibility)
@@ -527,6 +527,186 @@ bc_list_SARA_filtered<-bc_list %>%
   full_join(bc_SARA_list, by = "common_name") %>%   # some species are not joining properly (e.g., owls)
   filter(!is.na(Family)) %>% 
   filter(!is.na(schedule_sara)) 
+
+#write.csv(bc_list_SARA_filtered, "output_tables/list_Bc_species_SARA_status_2023.csv", row.names = FALSE)
+
+#View(bc_list_SARA_join)
+
+bc_list_SARA_join_ebird <-list_species_bc_ebird  %>% 
+  left_join(bc_SARA_list, by = "common_name") %>%   # some species are not joining properly (e.g., owls)
+  filter(!is.na(schedule_sara)) 
+
+#View(bc_list_SARA_join_ebird)
+
+bc_SARA_species<-unique(bc_list_SARA_filtered$common_name)
+
+bc_SARA_species_residents<-bc_list_SARA_join_ebird %>% 
+  filter(is_resident==TRUE) %>% 
+  distinct(common_name) %>% 
+  pull(common_name)
+
+# ================================
+# 3) DOWNLOAD RASTERS
+# ================================
+# This runs for those specie staht are non resident 
+for (species in bc_SARA_species) {
+  cat("/n>>> Downloading:", species, "/n")
+  # Download full-year abundance data at 3 km
+  try({
+    ebirdst_download_status(species,pattern = "full-year_max_3km",download_occurrence = FALSE,dry_run = FALSE, force = TRUE)
+  }, silent = TRUE)
+}
+
+# There are two species in the SARA that are resident ad therefore I need to download "abundance_seasonal_max_3km" # species are Marbled Murrelet and Western Screech owl
+
+# this complemenst for those species taht are resident 
+for (species in bc_SARA_species_residents) {
+  cat("/n>>> Downloading only residenst are new:", species, "/n")
+  # Download seasonal abundance data for resident species at 3 km
+  try({ ebirdst_download_status( species,pattern = "abundance_seasonal_max_3km",download_occurrence = FALSE,dry_run =FALSE,force = FALSE  )
+  }, silent = TRUE)
+}
+
+# ================================
+# 4) READ BC BOUNDARIES and transform to ebird projection
+# ================================
+
+# Read shapefile
+bc_boundary <- sf::st_read("data/layers/BC_boundary_layer.shp") # vector file 
+
+crs(bc_boundary)
+ext(bc_boundary)      # spatial extent
+#res(bc_boundary)      # resolution
+
+
+raster_ebird_projection <- crs( load_raster(species = "Cinnamon Teal", product = "abundance",period= "full-year",metric  = "max"))
+# The original boundary is projected as NAD 1983 BC Environment Albers
+# It is very important to check teh projection for ebird for every year because it changes between 2022 (UNIQUE PROJECTION) and 2023( WGC84)projectios
+
+# # do it directly to teh projection of interest 
+bc_boundary_proj <- bc_boundary %>%
+  st_transform(8857) %>%  # Equal Earth projection (projected CRS, meters)
+  vect()
+
+# ================================
+# 4) CROP THE SARA RASTERS TO BC 
+# ================================
+# the output directory
+output_dir_sara<-"data/output_bc_crop/sara"
+
+for (species in bc_SARA_species) {
+  try({
+    abundance <- load_raster(species, product = "abundance", period = "full-year", metric = "max")# Load raster (full-year abundance at 3 km)
+    abundance_masked <- terra::mask(crop(abundance, bc_boundary_proj), bc_boundary_proj)# Crop/mask to BC boundary
+    sp_name <- gsub(" ", "_", species) # Filename
+    out_file_full <- file.path(output_dir_sara, paste0(sp_name, "_abundance_full-year_max_3km_BC.tif"))
+    # Save (skip if exists OR set overwrite = TRUE)
+    if (!file.exists(out_file_full)) {
+      writeRaster(abundance_masked, out_file_full, overwrite = FALSE) # this makes sure we are not overwriting some species
+    }
+    
+    cat("✅ Saved (or already existed):", basename(out_file_full), "\n")
+  }, silent = TRUE)
+}
+
+# Run again for resident species, baceuse of the difefrence in file names 
+for (species in bc_SARA_species_residents) {
+  try({
+    abundance_residents <- load_raster(species, product = "abundance", period = "seasonal", metric = "max")
+    abundance_masked_residents <- mask(crop(abundance_residents, bc_boundary_proj), bc_boundary_proj)    # Crop/mask
+    sp_name <- gsub(" ", "_", species)# Filenames
+    out_file_season <- file.path(output_dir_sara, paste0(sp_name, "_abundance_resident_seasonal_max_3km_BC.tif"))
+    # Save (important skip if exists OR set overwrite = TRUE)
+    if (!file.exists(out_file_season)) {
+      writeRaster(abundance_masked_residents, out_file_season, overwrite = FALSE)
+    }
+    
+    cat("✅ Saved (or already existed):", basename(out_file_season), "\n")
+  }, silent = TRUE)
+}
+
+# ================================
+# 4) RENAME THE FILES  
+# ================================
+# ================================
+# 4a) RENAME THE RASTERS for the non resident
+# ================================
+# 6a) RENAME THE RASTERS for non-resident species and resident species. I am well aware taht there are two residents species but I just wnat to simplify this
+
+rasters_folder<-"data/output_bc_crop/sara"
+raster_files <- list.files(rasters_folder, pattern = "\\.tif$", full.names = TRUE)
+
+# the function to rename them including a name inside the raster
+rasters_renamed <- lapply(raster_files, function(f) {
+  r <- rast(f)
+  # Extract the filename (without extension)
+  fname <- tools::file_path_sans_ext(basename(f))
+  # Split and get first two words
+  parts <- strsplit(fname, "_")[[1]]
+  newname <- paste(parts[1:min(2, length(parts))], collapse = "_")
+  # Rename the layer inside the raster
+  names(r) <- newname
+  return(r)
+})
+
+####
+# 6a)Export the raster renamed into a new directory
+####
+outdir <- "data/output_bc_crop_named_sara"
+
+if (!dir.exists(outdir)) dir.create(outdir, recursive = TRUE) # make sure directory exist 
+
+# Loop through your list of rasters
+for (r in rasters_renamed) {
+  # Use the layer name as filename
+  nm <- names(r)
+  outfile <- file.path(outdir, paste0(nm, "abundance_full-year_or_seasonal_max_3km_BC.tif"))
+  writeRaster(r, outfile, overwrite = TRUE)
+  cat("✅ Saved:", outfile, "\n")
+}
+
+
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+##_##_###_##_CODE ENDS HERE 
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+
+
+
+
+# --------------- FOR Grassland SPECIES ----------------
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+# Note to remember species considered resident species in the ebird list do not have the full-year_max layer, instead they have  abundance_seasonal_max_3km.t
+# Interestingly non resident species fo ha a abundance_seasonal_max layer, I want to compare those two to see what difference it has 
+# #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
+
+# ================================
+# 1) CHOOSING THE DATA DIRECTORY
+# ================================
+####### Set the directory to download teh data for SARA species 
+Sys.setenv(EBIRDST_DATA_DIR = "C:/Users/jmunoz/Local_BirdsCanada/1_JV_science_coordinator_role_local/1_Projects/9_future_for_bc_birds/analyses/future_bc_birds/data/0_ebird_data_layers/grassland")
+
+# ================================
+# 2) THE DATA 
+# ================================
+bc_SARA_list <- read.csv("data/list/bird_species_at_risk_list_02_18_2026.csv", stringsAsFactors = FALSE) %>%
+  as_tibble() %>% 
+  rename(status_sara=status) %>% 
+  rename(schedule_sara=schedule)
+
+bc_list_SARA <-bc_list %>% 
+  full_join(bc_SARA_list, by = "common_name")   # some species are not joining properly (e.g., owls)
+
+bc_list_SARA_filtered<-bc_list %>% 
+  full_join(bc_SARA_list, by = "common_name") %>%   # some species are not joining properly (e.g., owls)
+  filter(!is.na(Family)) %>% 
+  filter(!is.na(schedule_sara)) 
+
+grassland_species<-c("Lark Sparrow",
+                     "Long-billed Curlew",
+                     "Sharp-tailed Grouse",
+                     "Upland Sandpiper",
+                     "Vesper Sparrow",
+                    "Western Meadowlark")
 
 #write.csv(bc_list_SARA_filtered, "output_tables/list_Bc_species_SARA_status_2023.csv", row.names = FALSE)
 

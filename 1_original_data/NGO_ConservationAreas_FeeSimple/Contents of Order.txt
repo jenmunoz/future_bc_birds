@@ -1,0 +1,14 @@
+------------------
+Order Details
+-----------------
+Order ID: 2477584
+Date: 20250725
+
+----------------------
+Feature Types
+-----------------------
+ - NGO Conservation Areas - Fee Simple in subdirectory WCL_CONSERVATION_AREAS_NGO_SP
+
+----------------------------
+Packaged Products
+----------------------------

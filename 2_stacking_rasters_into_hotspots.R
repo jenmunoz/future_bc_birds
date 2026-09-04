@@ -1,5 +1,4 @@
 
-
 ###_###_####_###_###_###_###_###_###_###_###_###_###_###_###_###_###_
 ## BC fund collaboration: future for Bc birds
 ## ##
@@ -145,11 +144,16 @@ plot(bc_all_birds_hotspot)
 # ---- 2b) WRITE OUTPUT RASTER ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
-writeRaster(
+# NEED TO PROJECT IT to be used in ArcGis
+bc_all_birds_hotspot_projected <- terra::project(
   bc_all_birds_hotspot,
-  "data/processed_rasters/bc_all_birds_hotspots_raster_2023.tif",
-  overwrite = TRUE
-)
+  "EPSG:3005",method = "near")
+
+writeRaster(
+  bc_all_birds_hotspot_projected,
+  "data/processed_rasters/bc_all_birds_hotspots_raster_NAD83_2023.tif",
+  datatype = "INT2S",  # or appropriate type
+  overwrite = TRUE)
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 # ---- 2c) PLOTTING ----
@@ -236,10 +240,75 @@ plot(bc_sara_hotspot)
 # ---- 3b) WRITE OUTPUT RASTER ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
-writeRaster(
+# NEED TO PROJECT IT to be used in ArcGis
+bc_sara_hotspot_projected <- terra::project(
   bc_sara_hotspot,
-  "data/processed_rasters/bc_sara_birds_hotspots_raster_2023.tif",
-  overwrite = TRUE
+  "EPSG:3005",method = "near")
+
+
+writeRaster(
+  bc_sara_hotspot_projected,
+  "data/processed_rasters/bc_sara_birds_hotspots_raster_NAD83_2023V2.tif",
+  datatype = "INT2S",  # or appropriate type
+  overwrite = FALSE
+)
+
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
+# ---- 3) Grasslands species analyses ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# 
+# Note:
+# Resident species in eBird do not have full-year_max layer
+# They have abundance_seasonal_max_3km.t
+# Non-resident species have abundance_seasonal_max layer
+# Goal: compare both types
+
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 3a) STACK BC Grassland SPECIES ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+folder_rasters_combos_sara <- "data/output_bc_crop_named_sara"
+
+# Function (same logic reused)
+load_reclass_and_sum_raster <- function(folder_rasters_combos_sara) {
+  files <- list.files(
+    path = folder_rasters_combos_sara,
+    pattern = "\\.tif$",
+    full.names = TRUE
+  )
+  if (length(files) == 0) {
+    warning("No raster files found in the folder")
+    return(NULL)
+  }
+  raster_stack <- terra::rast(files)
+  reclassified <- raster_stack > 0   # Reclassify: TRUE where >0, FALSE where <=0
+  sum_raster <- terra::app(reclassified, sum, na.rm = TRUE)# Sum across layers
+  zero_mask <- terra::app(reclassified == 0, sum, na.rm = TRUE) > 0 # Mask: identify pixels with at least one 0
+  sum_raster[is.na(sum_raster) & zero_mask] <- 0  # Replace NA with 0 where appropriate
+  return(sum_raster)
+}
+
+# Apply function
+bc_sara_hotspot <- load_reclass_and_sum_raster(folder_rasters_combos_sara)
+
+# Plot hotspot
+plot(bc_sara_hotspot)
+
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 3b) WRITE OUTPUT RASTER grasslands ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
+# NEED TO PROJECT IT to be used in ArcGis
+bc_sara_hotspot_projected <- terra::project(
+  bc_sara_hotspot,
+  "EPSG:3005",method = "near")
+
+
+writeRaster(
+  bc_sara_hotspot_projected,
+  "data/processed_rasters/bc_sara_birds_hotspots_raster_NAD83_2023V2.tif",
+  datatype = "INT2S",  # or appropriate type
+  overwrite = FALSE
 )
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#

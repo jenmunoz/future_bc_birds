@@ -1,0 +1,138 @@
+[
+	{
+		"title" : "NGO Conservation Areas - Fee Simple",
+		"name" : "ngo-conservation-areas-fee-simple",
+		"bcdc_data_resource_url" : "https://catalogue.data.gov.bc.ca/dataset/a306e21b-58d6-4b71-bac7-f3b1c8a4c779",
+		"description" : "The __NGO Conservation Areas - Fee Simple__ dataset contains spatial and attribute information for non-governmental organization (NGO) conservation areas in BC. Fee simple NGO conservation areas are private conservation lands owned by non-government organizations and managed for wildlife habitat conservation values. Overlap between this dataset and the provincial [__Conservation Lands__](https://catalogue.data.gov.bc.ca/dataset/conservation-lands) and [__BC Parks, Ecological Reserves and Protected Areas__](https://catalogue.data.gov.bc.ca/dataset/bc-parks-ecological-reserves-and-protected-areas) layers will occur where NGO lands have been leased to the province. Discrepancies between the provincial layers and this dataset are due to differing source cadastral information. Spatial boundaries were sourced primarily from Integrated Cadastral Information Society (ICI Society) data. This spatial layer contains multipart polygons.\n\nA [__Conservation Cross Reference Table__](https://catalogue.data.gov.bc.ca/dataset/db6d4e9d-aa20-4682-9e43-ad6ae52f4466) provides a link between this dataset and the provincial [__Conservation Lands__](https://catalogue.data.gov.bc.ca/dataset/conservation-lands). The CIP_PCL field in this dataset links to the Conservation_Land_ID field in the provincial [__Conservation Lands__](https://catalogue.data.gov.bc.ca/dataset/conservation-lands) dataset.",
+		"purpose" : "To provide a comprehensive inventory of the non-governmental organization (NGO) conservation areas (or private conservation lands) in British Columbia using boundaries derived from local government cadastral mapping and attributes from securement organizations and title certificates. The inventory includes Fee Simple, Registerable Interest, and Unregisterable Interest types of securements.",
+		"bcdc_type" : "Geographic",
+		"last_modified" : "2025-07-25T03:32:03",
+		"resource_storage_location" : "Bc Geographic Warehouse",
+		"object_name" : "WHSE_LEGAL_ADMIN_BOUNDARIES.WCL_CONSERVATION_AREAS_NGO_SP",
+		"object_short_name" : "WCL_CNSRVA",
+		"object_table_comments" : "This dataset contains spatial and attribute information for non-governmental organization (NGO) conservation areas in BC. Fee simple NGO conservation areas are private conservation lands owned by non-government organizations and managed for wildlife habitat conservation values. Overlap between this dataset and the provincial Conservation Lands and BC Parks, Ecological Reserves and Protected Areas layers will occur where NGO lands have been leased to the province. Discrepancies between the provincial layers and this dataset are due to differing source cadastral information. Spatial boundaries were sourced primarily from Integrated Cadastral Information Society data. Spatial layer contains multipart polygons.",
+		"projection_name" : "epsg3005",
+		"license_title" : "Open Data Commons - Public Domain Dedication and Licence",
+		"license_url" : "https://opendatacommons.org/licenses/pddl/1-0/",
+		"details" : [
+			{
+				"column_comments" : "CONSERVATION_AREA_NGO_ID is a system-generated unique identification number, e.g., 1, 2, 3.",
+				"column_name" : "CONSERVATION_AREAS_NGO_ID",
+				"data_precision" : 10,
+				"data_type" : "NUMBER",
+				"short_name" : "CNSRVTN_AR"
+			},
+			{
+				"column_comments" : "CID_PCL is a unique conservation identifier for each parcel in the dataset. The format is the following: ##-###-###, where the first two numbers identify the Conservation ID Region (WLAP_REGIONAL_BND_AREA_ID in the static 2002 BC Parks Region Boundary layer WHSE_ADMIN_BOUNDARIES.EADM_WLAP_REGION_BND_AREA_SVW), the next three numbers are created in sequential order when new projects are added to the database, and the last three numbers represent the parcel number (incremented when there are multiple parcels for a single conservation project), e.g., 04-086-004.",
+				"column_name" : "CID_PCL",
+				"data_precision" : 10,
+				"data_type" : "VARCHAR2",
+				"short_name" : "CID_PCL"
+			},
+			{
+				"column_comments" : "PROJECT_NAME is the name of the project unique to the BC NGO Conservation Database, e.g., Wells Sanctuary.",
+				"column_name" : "PROJECT_NAME",
+				"data_precision" : 250,
+				"data_type" : "VARCHAR2",
+				"short_name" : "PROJ_NAME"
+			},
+			{
+				"column_comments" : "DATA_SOURCE identifies the source of the spatial data, i.e., Tantalis Surveyed Parcels, Image, Survey Plan, Local Government, Islands Trust, ICI Society (Integrated Cadastral Fabric layer), ICI Society (Local Government Layer), ICI Society (Cadastre Layer).",
+				"column_name" : "DATA_SOURCE",
+				"data_precision" : 200,
+				"data_type" : "VARCHAR2",
+				"short_name" : "DATA_SRCE"
+			},
+			{
+				"column_comments" : "SOURCE_DATE is the date the parcel was updated in the source cadastral layer from which it was imported. If the source data did not have parcel-specific dates available, such as parcels from the provincial dataset Tantalis - Surveyed Parcels or parcels from some Local Governments, the source date is the date it was downloaded/received. Where the date of download/receipt was not available, the \"date received\" value from the associated title certificate was used.",
+				"column_name" : "SOURCE_DATE",
+				"data_precision" : 7,
+				"data_type" : "DATE",
+				"short_name" : "DATE_SRCE"
+			},
+			{
+				"column_comments" : "ACCURACY is the accuracy of parcel boundaries based on the data source. Where provided, accuracy from the source cadastral data is used for individual parcels. When unavailable, accuracy is assigned based on the data source. While some discretion during data entry is used to assess accuracy for individual parcels, general accuracy guidelines by data source are as follows: ICI Society data = 10m+, Local Government = 10m+, Islands Trust = 10m+, Tantalis Surveyed Parcels = 20m+, Image = dependant on resolution. Accuracy values included in dataset: <1m, 1-5m, 1-10m, 5-10m, 10m+, 20m+.",
+				"column_name" : "ACCURACY",
+				"data_precision" : 50,
+				"data_type" : "VARCHAR2",
+				"short_name" : "ACCURACY"
+			},
+			{
+				"column_comments" : "LEAD_SECUREMENT_ORG is the lead NGO securement organization, e.g., Ducks Unlimited Canada.",
+				"column_name" : "LEAD_SECUREMENT_ORG",
+				"data_precision" : 254,
+				"data_type" : "VARCHAR2",
+				"short_name" : "LEAD_ORG"
+			},
+			{
+				"column_comments" : "GENERAL_SECUREMENT_TYPE is the general type of lead securement. In this dataset, the value is always Fee Simple.",
+				"column_name" : "GENERAL_SECUREMENT_TYPE",
+				"data_precision" : 254,
+				"data_type" : "VARCHAR2",
+				"short_name" : "GEN_TYPE"
+			},
+			{
+				"column_comments" : "SPECIFIC_SECUREMENT_TYPE is the specific type of lead securement. In this dataset, the value is either Fee Simple or In Trust.",
+				"column_name" : "SPECIFIC_SECUREMENT_TYPE",
+				"data_precision" : 254,
+				"data_type" : "VARCHAR2",
+				"short_name" : "SPEC_TYPE"
+			},
+			{
+				"column_comments" : "SECUREMENT_DATE is the date of securement.",
+				"column_name" : "SECUREMENT_DATE",
+				"data_precision" : 7,
+				"data_type" : "DATE",
+				"short_name" : "SCRMNT_DT"
+			},
+			{
+				"column_comments" : "PUBLIC_ACCESS_INSTRUCTIONS are the instructions that should be followed regarding public access to the property, e.g., Please contact The Nature Trust of BC for inquiries about public access to this conservation area.",
+				"column_name" : "PUBLIC_ACCESS_INSTRUCTION",
+				"data_precision" : 200,
+				"data_type" : "VARCHAR2",
+				"short_name" : "PUB_ACCESS"
+			},
+			{
+				"column_comments" : "AREA_HECTARES is the area of the property in hectares, e.g., 10.93.",
+				"column_name" : "AREA_HECTARES",
+				"data_precision" : 8,
+				"data_type" : "NUMBER",
+				"short_name" : "AREA_HEC"
+			},
+			{
+				"column_comments" : "FEATURE_AREA_SQM is the system calculated area of a two-dimensional polygon in square meters.",
+				"column_name" : "FEATURE_AREA_SQM",
+				"data_precision" : 19,
+				"data_type" : "NUMBER",
+				"short_name" : "AREA_SQM"
+			},
+			{
+				"column_comments" : "FEATURE_LENGTH_M is the system calculated length or perimeter of a geometry in meters.",
+				"column_name" : "FEATURE_LENGTH_M",
+				"data_precision" : 19,
+				"data_type" : "NUMBER",
+				"short_name" : "FT_LNGTH_M"
+			},
+			{
+				"column_comments" : "SHAPE is the column used to reference the spatial coordinates defining the feature.",
+				"column_name" : "SHAPE",
+				"data_precision" : 1,
+				"data_type" : "SDO_GEOMETRY",
+				"short_name" : "SHAPE"
+			},
+			{
+				"column_comments" : "OBJECTID is a required attribute of feature classes and object classes in a geodatabase.",
+				"column_name" : "OBJECTID",
+				"data_precision" : 38,
+				"data_type" : "NUMBER",
+				"short_name" : "OBJECTID"
+			},
+			{
+				"column_comments" : "SE ANNO CAD DATA is a binary column used by spsatial tools to store annotation, curve features and CAD data when using the SDO_GEOMETRY storage data type.",
+				"column_name" : "SE_ANNO_CAD_DATA",
+				"data_precision" : 4000,
+				"data_type" : "BLOB"
+			}
+		]
+	}
+]

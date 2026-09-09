@@ -517,11 +517,7 @@ writeRaster(
 #  priority species
 priority_species_jv<-read.csv("data/list/birds_grouping_request_new/priority_species_JVs.csv")
 
-# priority_species_cijv <- read.csv( "data/list/birds_grouping_request_new/priority_species_JVs.csv") %>%
-#   filter( jv_priority %in% c("Both", "CIJV"))
-# 
-# priority_species_pbhjv <- read.csv( "data/list/birds_grouping_request_new/priority_species_JVs.csv") %>%
-#   filter( jv_priority %in% c("Both", "PBHJV-BC"))
+
 
 species_names_priority_species_jv <- gsub(" ", "_", priority_species_jv$common_name)
 
@@ -595,7 +591,7 @@ bc_priority_species_jv_hotspot <- load_reclass_and_sum_raster(output_folder_prio
 plot(bc_priority_species_jv_hotspot)
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
-# ---- 4c) WRITE OUTPUT RASTER ----
+# ---- 5c) WRITE OUTPUT RASTER ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # NEED TO PROJECT IT to be used in ArcGis
@@ -603,14 +599,18 @@ bc_priority_species_jv_hotspot_projected <- terra::project(  bc_priority_species
 
 writeRaster(
   bc_priority_species_jv_hotspot_projected,
-  "data/processed_rasters/bc_priority_species_jv_hotspot_raster_NAD83_2023.tif",
+  "data/processed_rasters/bc_priority_species_jv_hotspot_raster_NAD83_2023_pixel3km.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
 
-# ---- 4a) STACK BC BIRDS (longdistance migrants) ----
+
+# ---- 6a) STACK BC BIRDS (priority_species_cijv) ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
-list_requested_data<-read.csv("data/list/birds_grouping_request_new/socb_groups.csv")
-priority_species_cijv<-list_requested_data %>% filter(group_name=="long_distance_migrants")
+
+priority_species_cijv <- read.csv( "data/list/birds_grouping_request_new/priority_species_JVs.csv") %>%
+  filter( jv_priority %in% c("Both", "CIJV"))
+# 
+
 
 species_names_priority_species_cijv <- gsub(" ", "_", priority_species_cijv$common_name)
 
@@ -635,7 +635,7 @@ length(selected_files_priority_species_cijv )
 
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
-# ---- 4b) STACK BC BIRDS (priority_species_cijv) ----
+# ---- 6b) STACK BC BIRDS (priority_species_cijv) ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # ---- Function: Load, reclassify, and sum rasters ----
@@ -684,7 +684,7 @@ bc_priority_species_cijv_hotspot <- load_reclass_and_sum_raster(output_folder_pr
 plot(bc_priority_species_cijv_hotspot)
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
-# ---- 4c) WRITE OUTPUT RASTER ----
+# ---- 6c) WRITE OUTPUT RASTER ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # NEED TO PROJECT IT to be used in ArcGis
@@ -692,14 +692,15 @@ bc_priority_species_cijv_hotspot_projected <- terra::project(  bc_priority_speci
 
 writeRaster(
   bc_priority_species_cijv_hotspot_projected,
-  "data/processed_rasters/bc_priority_species_cijv_hotspot_raster_NAD83_2023.tif",
+  "data/processed_rasters/bc_priority_species_cijv_hotspot_raster_NAD83_2023_pixel3km.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
 
-# ---- 4a) STACK BC BIRDS (longdistance migrants) ----
+# ---- 7a) STACK BC BIRDS (priority_species_pbhjv) ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
-list_requested_data<-read.csv("data/list/birds_grouping_request_new/socb_groups.csv")
-priority_species_pbhjv<-list_requested_data %>% filter(group_name=="long_distance_migrants")
+
+priority_species_pbhjv <- read.csv( "data/list/birds_grouping_request_new/priority_species_JVs.csv") %>%
+  filter( jv_priority %in% c("Both", "PBHJV-BC"))
 
 species_names_priority_species_pbhjv <- gsub(" ", "_", priority_species_pbhjv$common_name)
 
@@ -724,7 +725,7 @@ length(selected_files_priority_species_pbhjv )
 
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
-# ---- 4b) STACK BC BIRDS (priority_species_pbhjv) ----
+# ---- 7b) STACK BC BIRDS (priority_species_pbhjv) ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # ---- Function: Load, reclassify, and sum rasters ----
@@ -773,7 +774,7 @@ bc_priority_species_pbhjv_hotspot <- load_reclass_and_sum_raster(output_folder_p
 plot(bc_priority_species_pbhjv_hotspot)
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
-# ---- 4c) WRITE OUTPUT RASTER ----
+# ---- 7c) WRITE OUTPUT RASTER ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # NEED TO PROJECT IT to be used in ArcGis
@@ -781,7 +782,7 @@ bc_priority_species_pbhjv_hotspot_projected <- terra::project(  bc_priority_spec
 
 writeRaster(
   bc_priority_species_pbhjv_hotspot_projected,
-  "data/processed_rasters/bc_priority_species_pbhjv_hotspot_raster_NAD83_2023.tif",
+  "data/processed_rasters/bc_priority_species_pbhjv_hotspot_raster_NAD83_2023_pixel3km.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
 

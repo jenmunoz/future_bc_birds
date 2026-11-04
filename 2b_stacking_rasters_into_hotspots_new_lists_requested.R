@@ -96,7 +96,7 @@ files <- list.files(path = folder_rasters_combos,pattern = "\\.tif$",full.names 
 
 # the species list
 list_requested_data<-read.csv("data/list/birds_grouping_request_new/socb_groups.csv")
-
+View( list_requested_data)
 # forest birds
 forest_birds<-list_requested_data %>% filter(group_name=="forest_birds")
 levels(list_requested_data$group_name)
@@ -220,10 +220,10 @@ plot(bc_forest_birds_hotspot)
 # NEED TO PROJECT IT to be used in ArcGis
 bc_forest_birds_hotspot_projected <- terra::project( bc_forest_birds_hotspot,"EPSG:3005",method = "near") # EPSG:3005 is BC Albers, and method = "near" uses nearest-neighbour resampling. That means the reprojection will only assign existing raster values rather than creating intermediate values. Terra specifically recommends near for categorical/discrete rasters
 
-writeRaster(bc_forest_birds_hotspot_projected,
-  "data/processed_rasters/bc_forest_birds_hotspot_raster_NAD83_2023.tif",
-  datatype = "INT2S",  # or appropriate type
-  overwrite = TRUE)
+# writeRaster(bc_forest_birds_hotspot_projected,
+#   "data/processed_rasters/bc_forest_birds_hotspot_raster_NAD83_2023.tif",
+#   datatype = "INT2S",  # or appropriate type
+#   overwrite = TRUE)
 
 
 
@@ -846,6 +846,105 @@ ggplot() +
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 # ---- END OF SCRIPT ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
+
+
+# Read the list for each species in the rasters created -------------------
+
+
+bc_birds<-rast ("data/processed_rasters/bc_all_birds_hotspots_raster_NAD83_2023_v2.tif")
+
+bc_sara_birds <-rast ("data/processed_rasters/bc_sara_birds_hotspots_raster_NAD83_2023_v2.tif")
+bc_forest_birds<- rast("data/processed_rasters/3_bc_forest_birds_hotspot_raster_NAD83_2023.tif")
+
+bc_forest_birds<-rast("data/processed_rasters/4_bc_grassland_birds_hotspot_raster_NAD83_2023.tif")
+
+bc_longdistance_migrants<-rast("data/processed_rasters/5_bc_longdistance_migrants_hotspot_raster_NAD83_2023.tif")
+
+bc_priority_species_pbhjvandcijv <-rast("data/processed_rasters/6_bc_priority_species_jv_hotspot_raster_NAD83_2023_pixel3km.tif")
+
+bc_priority_species_cijv<-rast("data/processed_rasters/7a_bc_priority_species_cijv_hotspot_raster_NAD83_2023_pixel3km.tif")
+
+bc_migratory_birds_dan<-rast("data/processed_rasters/9_bc_overall_migrants_hotspot_raster_NAD83_2023.tif")
+
+
+# lets try to extract all the names from each folder containing the rasters 
+
+# Trial for one folder
+# files1 <- list.files("data/output_bc_crop_named_all", recursive = TRUE, full.names = TRUE)
+# 
+# table1 <- data.frame(
+#   file_name = basename(files1),
+#   file_path = files1)
+# 
+# table1$species <- sub("abundance.*", "", table1$file_name)
+
+# Function 
+
+extract_species <- function(folder_path) {
+  # Extract all files from the folder
+  files <- list.files(folder_path,recursive = TRUE, full.names = TRUE)
+  # Create a table
+  species_table <- data.frame(file_name = basename(files),file_path = files)
+  # Extract species names
+  species_table$species <- sub("abundance.*",  "", species_table$file_name)
+  
+  return(species_table)
+}
+
+
+bc_birds <- extract_species("data/output_bc_crop_named_all")
+
+bc_birds_sara <- extract_species("data/output_bc_crop_named_sara")
+
+bc_forest_birds <- extract_species("data/output_bc_forest_birds_named_crop")
+
+bc_grasslands_birds <- extract_species("data/output_bc_grassland_birds_named_crop")
+
+bc_longdistance_migrants <- extract_species("data/output_bc_longdistance_migrants_named_crop")
+
+bc_overall_migrants <- extract_species("data/output_bc_overall_migrants_named_crop")
+
+bc_priority_species_cijv <- extract_species("data/output_bc_priority_species_cijv_named_crop")
+
+bc_priority_species_pbhjv<- extract_species("data/output_bc_priority_species_pbhjv_named_crop")
+
+bc_priority_species <- extract_species("data/output_bc_priority_species_jv_named_crop")
+
+
+# Add folder names to each table
+bc_birds$group <- "bc_birds_included"
+bc_birds_sara$group <- "bc_birds_sara"
+bc_forest_birds$group <- "bc_forest_birds"
+bc_grasslands_birds$group <- "bc_grassland_birds"
+bc_longdistance_migrants$group <- "bc_longdistance_migrants"
+bc_overall_migrants$group <- "bc_overall_migrants"
+bc_priority_species_cijv$group <- "bc_priority_species_cijv"
+bc_priority_species_pbhjv$group <- "bc_priority_species_pbhjv"
+bc_priority_species$group <- "bc_priority_species_jv"
+
+
+# Combine all tables
+all_files <- rbind(
+  bc_birds,
+  bc_birds_sara,
+  bc_forest_birds,
+  bc_grasslands_birds,
+  bc_longdistance_migrants,
+  bc_overall_migrants,
+  bc_priority_species_cijv,
+  bc_priority_species_pbhjv,
+  bc_priority_species
+)
+
+
+# View the combined table
+#View(all_files)
+write.csv(
+  all_files,
+  "metadata_outputs_JM/bird_species_list_per_rasters.csv",
+  row.names = FALSE
+)
 
 # #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 # # ---- 3) SARA SPECIES ANALYSIS ----

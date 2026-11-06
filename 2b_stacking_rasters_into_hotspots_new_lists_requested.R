@@ -72,8 +72,6 @@ library(ggplot2)      # Plots
 getwd()
 
 # Define raster folder
-
-
 # Read BC boundary shapefile
 bc_boundary <- sf::st_read("data/layers/BC_boundary_layer.shp") 
 
@@ -96,7 +94,7 @@ files <- list.files(path = folder_rasters_combos,pattern = "\\.tif$",full.names 
 
 # the species list
 list_requested_data<-read.csv("data/list/birds_grouping_request_new/socb_groups.csv")
-View( list_requested_data)
+#View( list_requested_data)
 # forest birds
 forest_birds<-list_requested_data %>% filter(group_name=="forest_birds")
 levels(list_requested_data$group_name)
@@ -104,7 +102,6 @@ unique(list_requested_data$ group_name)
 
 # grassland_birds
 grassland_birds<-list_requested_data %>% filter(group_name=="grassland_birds")
-
 
 # long-distance migrants 
 longdistance_migrants<-list_requested_data %>% filter(group_name=="long_distance_migrants")
@@ -136,10 +133,13 @@ head(priority_species_jv)
 list_requested_data<-read.csv("data/list/birds_grouping_request_new/socb_groups.csv")
 forest_birds<-list_requested_data %>% filter(group_name=="forest_birds")
 
+# Extract the species names 
 species_names_forest_birds <- gsub(" ", "_", forest_birds$common_name)
 
+# Create patterns and find them in the raster folders 
 pattern_forest_birds <- paste0("^(", paste(species_names_forest_birds, collapse = "|"), ")")
 selected_files_forest_birds <- files[ grepl(pattern_forest_birds, basename(files))]
+basename(selected_files_forest_birds)
 
 # Create destination folder for the forest birds rasters
 output_folder_forest <- "data/output_bc_forest_birds_named_crop"
@@ -153,7 +153,6 @@ file.copy( from = selected_files_forest_birds,
   to = output_folder_forest,
   overwrite = TRUE)
 
-#### I am working here 
 # quick check
 
 length(selected_files_forest_birds )
@@ -165,8 +164,6 @@ length(species_names_forest_birds)# this is longer because it also include speci
 
 
 # ---- Function: Load, reclassify, and sum rasters ----
-
-
 load_reclass_and_sum_raster <- function(folder_rasters_combos) {
   
   files <- list.files(
@@ -225,15 +222,18 @@ bc_forest_birds_hotspot_projected <- terra::project( bc_forest_birds_hotspot,"EP
 #   datatype = "INT2S",  # or appropriate type
 #   overwrite = TRUE)
 
-
+writeRaster(bc_forest_birds_hotspot_projected,
+  "data/processed_rasters/version2/3_bc_forest_birds_hotspot_raster_NAD83_2023_v2.tif",
+  datatype = "INT2S",  # or appropriate type
+  overwrite = TRUE)
 
 # ---- 3a) STACK BC BIRDS (Grassland birds) ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 list_requested_data<-read.csv("data/list/birds_grouping_request_new/socb_groups.csv")
 grassland_birds<-list_requested_data %>% filter(group_name=="grassland_birds")
 
+# Create patterns and find them in the raster folders 
 species_names_grassland_birds <- gsub(" ", "_", grassland_birds$common_name)
-
 pattern_grassland_birds <- paste0("^(", paste(species_names_grassland_birds, collapse = "|"), ")")
 selected_files_grassland_birds <- files[ grepl(pattern_grassland_birds, basename(files))]
 
@@ -260,7 +260,6 @@ length(selected_files_grassland_birds )
 # ---- Function: Load, reclassify, and sum rasters ----
 
 load_reclass_and_sum_raster <- function(folder_rasters_combos) {
-  
   files <- list.files(
     path = folder_rasters_combos,
     pattern = "\\.tif$",
@@ -312,12 +311,17 @@ plot(bc_grassland_birds_hotspot)
 # NEED TO PROJECT IT to be used in ArcGis
 bc_grassland_birds_hotspot_projected <- terra::project(  bc_grassland_birds_hotspot,"EPSG:3005",method = "near") # EPSG:3005 is BC Albers, and method = "near" uses nearest-neighbour resampling. That means the reprojection will only assign existing raster values rather than creating intermediate values. Terra specifically recommends near for categorical/discrete rasters
 
+# writeRaster(
+#   bc_grassland_birds_hotspot_projected,
+#   "data/processed_rasters/bc_grassland_birds_hotspot_raster_NAD83_2023.tif",
+#   datatype = "INT2S",  # or appropriate type
+#   overwrite = TRUE)
+
 writeRaster(
   bc_grassland_birds_hotspot_projected,
-  "data/processed_rasters/bc_grassland_birds_hotspot_raster_NAD83_2023.tif",
+  "data/processed_rasters/version2/4_bc_grassland_birds_hotspot_raster_NAD83_2023v2.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
-
 
 
 # ---- 4a) STACK BC BIRDS (longdistance migrants) ----
@@ -403,9 +407,15 @@ plot(bc_longdistance_migrants_hotspot)
 # NEED TO PROJECT IT to be used in ArcGis
 bc_longdistance_migrants_hotspot_projected <- terra::project(  bc_longdistance_migrants_hotspot ,"EPSG:3005",method = "near") # EPSG:3005 is BC Albers, and method = "near" uses nearest-neighbour resampling. That means the reprojection will only assign existing raster values rather than creating intermediate values. Terra specifically recommends near for categorical/discrete rasters
 
+# writeRaster(
+#   bc_longdistance_migrants_hotspot_projected,
+#   "data/processed_rasters/bc_longdistance_migrants_hotspot_raster_NAD83_2023.tif",
+#   datatype = "INT2S",  # or appropriate type
+#   overwrite = TRUE)
+
 writeRaster(
   bc_longdistance_migrants_hotspot_projected,
-  "data/processed_rasters/bc_longdistance_migrants_hotspot_raster_NAD83_2023.tif",
+  "data/processed_rasters/version2/5_bc_longdistance_migrants_hotspot_raster_NAD83_2023_v2.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
 
@@ -417,7 +427,6 @@ writeRaster(
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 #  migrants this is a request from Dan Dixon ECCC
 overall_migrants<-read.csv("data/list/birds_grouping_request_new/MBCA_MigBirds_Dan_ECCC.csv")
-
 
 species_names_overall_migrants <- gsub(" ", "_", overall_migrants$common_name)
 
@@ -501,15 +510,21 @@ plot(bc_overall_migrants_hotspot)
 # NEED TO PROJECT IT to be used in ArcGis
 bc_overall_migrants_hotspot_projected <- terra::project(bc_overall_migrants_hotspot,"EPSG:3005",method = "near") # EPSG:3005 is BC Albers, and method = "near" uses nearest-neighbour resampling. That means the reprojection will only assign existing raster values rather than creating intermediate values. Terra specifically recommends near for categorical/discrete rasters
 
+# writeRaster(
+#   bc_overall_migrants_hotspot_projected,
+#   "data/processed_rasters/bc_overall_migrants_hotspot_raster_NAD83_2023.tif",
+#   datatype = "INT2S",  # or appropriate type
+#   overwrite = TRUE)
+
 writeRaster(
   bc_overall_migrants_hotspot_projected,
-  "data/processed_rasters/bc_overall_migrants_hotspot_raster_NAD83_2023.tif",
+  "data/processed_rasters/version2/10_bc_overall_migrants_hotspot_raster_NAD83_2023_v2.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
 
+
 # 
 
-# I am working here, I need to clean teh list of priority species ofr Bc because it is very MESSY 
 
 
 # ---- 5a) STACK BC BIRDS (CIJV and pbhjv PRIORITY SPECIES ) ----
@@ -597,12 +612,17 @@ plot(bc_priority_species_jv_hotspot)
 # NEED TO PROJECT IT to be used in ArcGis
 bc_priority_species_jv_hotspot_projected <- terra::project(  bc_priority_species_jv_hotspot ,"EPSG:3005",method = "near") # EPSG:3005 is BC Albers, and method = "near" uses nearest-neighbour resampling. That means the reprojection will only assign existing raster values rather than creating intermediate values. Terra specifically recommends near for categorical/discrete rasters
 
+# writeRaster(
+#   bc_priority_species_jv_hotspot_projected,
+#   "data/processed_rasters/bc_priority_species_jv_hotspot_raster_NAD83_2023_pixel3km.tif",
+#   datatype = "INT2S",  # or appropriate type
+#   overwrite = TRUE)
+
 writeRaster(
   bc_priority_species_jv_hotspot_projected,
-  "data/processed_rasters/bc_priority_species_jv_hotspot_raster_NAD83_2023_pixel3km.tif",
+  "data/processed_rasters/version2/6_bc_priority_species_jv_hotspot_raster_NAD83_2023_pixel3km_v2.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
-
 
 # ---- 6a) STACK BC BIRDS (priority_species_cijv) ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
@@ -690,9 +710,15 @@ plot(bc_priority_species_cijv_hotspot)
 # NEED TO PROJECT IT to be used in ArcGis
 bc_priority_species_cijv_hotspot_projected <- terra::project(  bc_priority_species_cijv_hotspot ,"EPSG:3005",method = "near") # EPSG:3005 is BC Albers, and method = "near" uses nearest-neighbour resampling. That means the reprojection will only assign existing raster values rather than creating intermediate values. Terra specifically recommends near for categorical/discrete rasters
 
+# writeRaster(
+#   bc_priority_species_cijv_hotspot_projected,
+#   "data/processed_rasters/bc_priority_species_cijv_hotspot_raster_NAD83_2023_pixel3km.tif",
+#   datatype = "INT2S",  # or appropriate type
+#   overwrite = TRUE)
+
 writeRaster(
   bc_priority_species_cijv_hotspot_projected,
-  "data/processed_rasters/bc_priority_species_cijv_hotspot_raster_NAD83_2023_pixel3km.tif",
+  "data/processed_rasters/version2/7_bc_priority_species_cijv_hotspot_raster_NAD83_2023_pixel3km.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
 
@@ -780,16 +806,120 @@ plot(bc_priority_species_pbhjv_hotspot)
 # NEED TO PROJECT IT to be used in ArcGis
 bc_priority_species_pbhjv_hotspot_projected <- terra::project(  bc_priority_species_pbhjv_hotspot ,"EPSG:3005",method = "near") # EPSG:3005 is BC Albers, and method = "near" uses nearest-neighbour resampling. That means the reprojection will only assign existing raster values rather than creating intermediate values. Terra specifically recommends near for categorical/discrete rasters
 
+# writeRaster(
+#   bc_priority_species_pbhjv_hotspot_projected,
+#   "data/processed_rasters/bc_priority_species_pbhjv_hotspot_raster_NAD83_2023_pixel3km.tif",
+#   datatype = "INT2S",  # or appropriate type
+#   overwrite = TRUE)
+
 writeRaster(
   bc_priority_species_pbhjv_hotspot_projected,
-  "data/processed_rasters/bc_priority_species_pbhjv_hotspot_raster_NAD83_2023_pixel3km.tif",
+  "data/processed_rasters/version2/bc_priority_species_pbhjv_hotspot_raster_NAD83_2023_pixel3km_v2.tif",
+  datatype = "INT2S",  # or appropriate type
+  overwrite = TRUE)
+
+
+
+# ---- 8a) STACK BC BIRDS (coastal waterbird species ) ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+list_requested_data<-read.csv("data/list/birds_grouping_request_new/guild_list.csv")
+coastal_waterbirds<-list_requested_data 
+
+# Create patterns and find them in the raster folders 
+species_names_coastal_waterbirds <- gsub(" ", "_", coastal_waterbirds$common_name)
+pattern_coastal_waterbirds <- paste0("^(", paste(species_names_coastal_waterbirds, collapse = "|"), ")")
+selected_files_coastal_waterbirds <- files[ grepl(pattern_coastal_waterbirds, basename(files))]
+
+# Create destination folder for the grassland birds rasters
+output_folder_coastal_waterbirds <- "data/output_bc_coastal_waterbirds_named_crop"
+
+dir.create(output_folder_coastal_waterbirds,
+           recursive = TRUE,
+           showWarnings = FALSE)
+
+# Copy selected files into the new folder
+file.copy( from = selected_files_coastal_waterbirds,
+           to = output_folder_coastal_waterbirds ,
+           overwrite = TRUE)
+
+# quick check for the number of grassland birds in the list, tehn compare it with teh rasters extracted 
+
+length(selected_files_coastal_waterbirds )
+
+
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 8b) STACK BC BIRDS~Function (coastal_waterbirds) ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- Function: Load, reclassify, and sum rasters ----
+
+load_reclass_and_sum_raster <- function(folder_rasters_combos) {
+  files <- list.files(
+    path = folder_rasters_combos,
+    pattern = "\\.tif$",
+    full.names = TRUE
+  ) # List Selected raster files  .tif raster files
+  
+  # Safety check
+  if (length(files) == 0) {
+    warning("No raster files found in the folder")
+    return(NULL)
+  }
+  
+  raster_stack <- terra::rast(files) # Load all raster files into a SpatRaster stack
+  
+  # Reclassify raster values
+  # TRUE (1) where >0, FALSE (0) where <=0
+  reclassified <- raster_stack > 0  
+  
+  # Sum across layers
+  # Each pixel represents the number of layers with value >0
+  sum_raster <- terra::app(reclassified, sum, na.rm = TRUE)
+  
+  # Mask: identify pixels where at least one layer had a 0
+  zero_mask <- terra::app(reclassified == 0, sum, na.rm = TRUE) > 0
+  
+  # Replace NA with 0 where we know at least one layer had valid 0
+  sum_raster[is.na(sum_raster) & zero_mask] <- 0  
+  
+  return(sum_raster)
+}
+
+# Folder with rasters
+
+output_folder_coastal_waterbirds <- "data/output_bc_coastal_waterbirds_named_crop"
+
+# Apply function
+bc_coastal_waterbirds_hotspot <- load_reclass_and_sum_raster(output_folder_coastal_waterbirds)
+
+# Plot hotspot
+plot(bc_coastal_waterbirds_hotspot)
+### I am working here 
+
+
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+# ---- 3c) WRITE OUTPUT RASTER ----
+#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
+
+# NEED TO PROJECT IT to be used in ArcGis
+bc_coastal_waterbirds_hotspot_projected <- terra::project(  bc_coastal_waterbirds_hotspot,"EPSG:3005",method = "near") # EPSG:3005 is BC Albers, and method = "near" uses nearest-neighbour resampling. That means the reprojection will only assign existing raster values rather than creating intermediate values. Terra specifically recommends near for categorical/discrete rasters
+
+# writeRaster(
+#   bc_coastal_waterbirds_hotspot_projected,
+#   "data/processed_rasters/bc_coastal_waterbirds_hotspot_raster_NAD83_2023.tif",
+#   datatype = "INT2S",  # or appropriate type
+#   overwrite = TRUE)
+
+writeRaster(
+  bc_coastal_waterbirds_hotspot_projected,
+  "data/processed_rasters/version2/9_bc_coastal_waterbirds_hotspot_raster_NAD83_2023v2.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
 
 
 
 
-# # ---- 2b) WRITE OUTPUT RASTER ----
+# # ----  WRITE OUTPUT RASTERS CODE CHUNK ----
 # #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 # 
 # # NEED TO PROJECT IT to be used in ArcGis
@@ -802,7 +932,7 @@ writeRaster(
 #   overwrite = TRUE)
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
-# ---- 2c) PLOTTING ----
+# ---- extra) PLOTTING ----
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 
 # Convert raster to dataframe
@@ -868,7 +998,7 @@ bc_priority_species_cijv<-rast("data/processed_rasters/7a_bc_priority_species_ci
 bc_migratory_birds_dan<-rast("data/processed_rasters/9_bc_overall_migrants_hotspot_raster_NAD83_2023.tif")
 
 
-# lets try to extract all the names from each folder containing the rasters 
+# lets try to extract all the names from each folder containing the rasters for each of the groups-------------------------
 
 # Trial for one folder
 # files1 <- list.files("data/output_bc_crop_named_all", recursive = TRUE, full.names = TRUE)

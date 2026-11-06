@@ -152,6 +152,8 @@ bc_species <- unique(bc_list$common_name)
 # Example: explore Cinnamon Teal availability
 glimpse(dplyr::filter(ebirdst::ebirdst_runs, common_name == "Cinnamon Teal"))
 
+
+
 # This shows all the species that have data in ebird
 # View(ebirdst_runs$common_name)
 

@@ -66,7 +66,9 @@ library(ggplot2)      # Plots
 getwd()
 
 # Define raster folder
-folder_rasters_combos <- "data/output_bc_crop_named_residents"
+#folder_rasters_combos <- "data/output_bc_crop_named_residents"
+folder_rasters_combos <- "data/output_bc_crop_named_all"
+
 
 # List raster files
 files <- list.files(
@@ -149,9 +151,15 @@ bc_all_birds_hotspot_projected <- terra::project(
   bc_all_birds_hotspot,
   "EPSG:3005",method = "near")
 
+# writeRaster(
+#   bc_all_birds_hotspot_projected,
+#   "data/processed_rasters/bc_all_birds_hotspots_raster_NAD83_2023.tif",
+#   datatype = "INT2S",  # or appropriate type
+#   overwrite = TRUE)
+
 writeRaster(
   bc_all_birds_hotspot_projected,
-  "data/processed_rasters/bc_all_birds_hotspots_raster_NAD83_2023.tif",
+  "data/processed_rasters/version2/1_bc_all_birds_hotspots_raster_NAD83_2023_v2.tif",
   datatype = "INT2S",  # or appropriate type
   overwrite = TRUE)
 
@@ -252,6 +260,13 @@ writeRaster(
   datatype = "INT2S",  # or appropriate type
   overwrite = FALSE
 )
+
+writeRaster(
+  bc_sara_hotspot_projected,
+  "data/processed_rasters/version2/2_bc_sara_birds_hotspots_raster_NAD83_2023V2.tif",
+  datatype = "INT2S",  # or appropriate type
+  overwrite = FALSE)
+
 
 #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 

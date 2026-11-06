@@ -981,21 +981,17 @@ ggplot() +
 
 # Read the list for each species in the rasters created -------------------
 
+bc_birds<-rast ("data/processed_rasters/version2/1_bc_all_birds_hotspots_raster_NAD83_2023_v2.tif")
 
-bc_birds<-rast ("data/processed_rasters/bc_all_birds_hotspots_raster_NAD83_2023_v2.tif")
-
-bc_sara_birds <-rast ("data/processed_rasters/bc_sara_birds_hotspots_raster_NAD83_2023_v2.tif")
-bc_forest_birds<- rast("data/processed_rasters/3_bc_forest_birds_hotspot_raster_NAD83_2023.tif")
-
-bc_forest_birds<-rast("data/processed_rasters/4_bc_grassland_birds_hotspot_raster_NAD83_2023.tif")
-
-bc_longdistance_migrants<-rast("data/processed_rasters/5_bc_longdistance_migrants_hotspot_raster_NAD83_2023.tif")
-
-bc_priority_species_pbhjvandcijv <-rast("data/processed_rasters/6_bc_priority_species_jv_hotspot_raster_NAD83_2023_pixel3km.tif")
-
-bc_priority_species_cijv<-rast("data/processed_rasters/7a_bc_priority_species_cijv_hotspot_raster_NAD83_2023_pixel3km.tif")
-
-bc_migratory_birds_dan<-rast("data/processed_rasters/9_bc_overall_migrants_hotspot_raster_NAD83_2023.tif")
+bc_sara_birds <-rast ("data/processed_rasters/version2/2_bc_sara_birds_hotspots_raster_NAD83_2023_v2.tif")
+bc_forest_birds<- rast("data/processed_rasters/version2/3_bc_forest_birds_hotspot_raster_NAD83_2023_v2.tif")
+bc_forest_birds<-rast("data/processed_rasters/version2/4_bc_grassland_birds_hotspot_raster_NAD83_2023_v2.tif")
+bc_longdistance_migrants<-rast("data/processed_rasters/version2/5_bc_longdistance_migrants_hotspot_raster_NAD83_2023_v2.tif")
+bc_priority_species_pbhjvandcijv <-rast("data/processed_rasters/version2/6_bc_priority_species_jv_hotspot_raster_NAD83_2023_pixel3km_v2.tif")
+bc_priority_species_cijv<-rast("data/processed_rasters/version2/7_bc_priority_species_cijv_hotspot_raster_NAD83_2023_pixel3km_v2.tif")
+bc_priority_species_pbjv<-rast("data/processed_rasters/version2/8_bc_priority_species_pbhjv_hotspot_raster_NAD83_2023_pixel3km_v2.tif")
+bc_waterfowl_coastal_waterbirds<-rast("data/processed_rasters/version2/9_bc_coastal_waterbirds_hotspot_raster_NAD83_2023v2.tif")
+bc_migratory_birds_dan<-rast("data/processed_rasters/version2/10_bc_overall_migrants_hotspot_raster_NAD83_2023_v2.tif")
 
 
 # lets try to extract all the names from each folder containing the rasters for each of the groups-------------------------
@@ -1041,6 +1037,8 @@ bc_priority_species_pbhjv<- extract_species("data/output_bc_priority_species_pbh
 
 bc_priority_species <- extract_species("data/output_bc_priority_species_jv_named_crop")
 
+bc_coastal_waterbirds<-extract_species("data/output_bc_coastal_waterbirds_named_crop")
+
 
 # Add folder names to each table
 bc_birds$group <- "bc_birds_included"
@@ -1048,10 +1046,11 @@ bc_birds_sara$group <- "bc_birds_sara"
 bc_forest_birds$group <- "bc_forest_birds"
 bc_grasslands_birds$group <- "bc_grassland_birds"
 bc_longdistance_migrants$group <- "bc_longdistance_migrants"
-bc_overall_migrants$group <- "bc_overall_migrants"
 bc_priority_species_cijv$group <- "bc_priority_species_cijv"
 bc_priority_species_pbhjv$group <- "bc_priority_species_pbhjv"
 bc_priority_species$group <- "bc_priority_species_jv"
+bc_coastal_waterbirds$group <- "bc_coastal_waterbirds"
+bc_overall_migrants$group <- "bc_overall_migrants"
 
 
 # Combine all tables
@@ -1064,17 +1063,16 @@ all_files <- rbind(
   bc_overall_migrants,
   bc_priority_species_cijv,
   bc_priority_species_pbhjv,
-  bc_priority_species
-)
+  bc_priority_species,
+  bc_coastal_waterbirds)
 
 
 # View the combined table
 #View(all_files)
 write.csv(
   all_files,
-  "metadata_outputs_JM/bird_species_list_per_rasters.csv",
-  row.names = FALSE
-)
+  "metadata_outputs_JM/bird_species_list_per_rasters_v2.csv",
+  row.names = FALSE)
 
 # #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#
 # # ---- 3) SARA SPECIES ANALYSIS ----
